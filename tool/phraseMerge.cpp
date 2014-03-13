@@ -1,7 +1,7 @@
 /*
 	Author: Paul Chen
 	Date: 2014/03/11
-	Target: Maege phrase by 'prep.' flag
+	Target: Maege phrase by 'prep.' flag, base on "gizaDecodeResult"
 */
 #include <iostream>
 #include <string>
@@ -37,6 +37,7 @@ int main(int argc, char* argv[]){
 	const string ALIGN_WORD_LIB = "../data/gizaDecodeResult";
 	const string CH_LAW_PATH = "../data/chBaseTrain";
 	const string EN_LAW_PATH = "../data/enBaseTrain";
+	const string OUTPUT_PATH = "../data/phraseResult";
 	char buf[65536];
 	string tmpStr, baseWord, alignWord, mergeResult;
 	string chLaw, enLaw;
@@ -70,6 +71,7 @@ int main(int argc, char* argv[]){
 	//Merge Phrase
 	fin.open(CH_LAW_PATH.c_str(), ios::in);
 	fin2.open(EN_LAW_PATH.c_str(), ios::in);
+	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	while(!fin.eof() && !fin2.eof()){//For each Pair
 		//Load Law Sentence info
 		fin.getline(buf, 65536);
@@ -96,8 +98,7 @@ int main(int argc, char* argv[]){
 				if(flag != 0){
 					mergeResult = mergePhrase(enWordSeg, enWordFlag, chWordSeg[i]);
 					if(mergeResult.length() >= 3){
-						cout << "======================" << endl;
-						cout << chWordSeg[i] << " : " << mergeResult << endl;
+						fout << chWordSeg[i] << "," << mergeResult << ",0" << endl;
 					}
 				}
 			}
@@ -105,6 +106,7 @@ int main(int argc, char* argv[]){
 	}
 	fin.close();
 	fin2.close();
+	fout.close();
 
 /*Show align Lib
 	map<string, ALIGNPOOL>::iterator iter;
@@ -139,7 +141,7 @@ int explode(char divideChar, string originalString, vector<string> &stringAry){
 string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord){
 	string tmpStr = "", buf;
 	int i, flag, posHead, posTail, tmpPos1, tmpPos2;
-	string *prepLib = new string[18]{"at", "on", "in", "to", "for", "of", "from", "by", "such", "who", "what", "where", "when", "why", "how", "is", "are", "am"};
+	string *prepLib = new string[21]{"at", "on", "in", "to", "for", "of", "from", "by", "such", "who", "what", "where", "when", "why", "how", "is", "are", "am", "a", "an", "the"};
 	//Basic conception: find longest continue '1'
 	if(wordSeg.size() > 0){
 		for(i = 0, tmpPos1 = -1, tmpPos2 = -1; i < wordSeg.size(); i++){//For each segment
@@ -162,7 +164,8 @@ string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord
 		}
 		//Post process and Output result
 		if(posHead != -1 && posTail - posHead > 1 && posTail - posHead <= 1 + baseWord.length()/3){
-			for(i = 0; i < 18; i++){
+			//Post Process
+			for(i = 0; i < 21; i++){//Remove prep word
 				if(wordSeg[posHead] == prepLib[i]){
 					posHead++;
 				}
@@ -170,7 +173,7 @@ string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord
 					posTail--;
 				}
 			}
-
+			//Output
 			for(i = posHead; i <= posTail; i++){
 				//tmpStr += wordSeg[i] + "(" + int2str(i) + ") ";
 				tmpStr += wordSeg[i] + " ";
@@ -180,6 +183,7 @@ string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord
 	else{
 		cout << "EMPTY!!" << endl;
 	}
+	tmpStr = tmpStr.substr(0, tmpStr.length()-1);
 	return tmpStr;
 }
 
