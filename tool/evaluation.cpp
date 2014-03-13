@@ -16,8 +16,17 @@ typedef struct ALIGNLIB{
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign";
-	const string ALIGN_PATH = "../data/gizaDecodeResult";
-	const string EVALUTE_RESULT_PATH = "../data/evaluteResult";
+	string ALIGN_PATH;
+	string EVALUTE_RESULT_PATH;
+
+	if(argc == 3){
+		ALIGN_PATH.assign(argv[1]);
+		EVALUTE_RESULT_PATH.assign(argv[2]);
+	}
+	else{
+		ALIGN_PATH = "../data/gizaDecodeResult";
+		EVALUTE_RESULT_PATH = "../data/evaluteResult";
+	}
 	map<string, alignLib> wordLib;
 	fstream fin, fout;
 	char buf[4096];
