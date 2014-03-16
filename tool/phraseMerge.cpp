@@ -3,19 +3,7 @@
 	Date: 2014/03/11
 	Target: Maege phrase by 'prep.' flag, base on "gizaDecodeResult"
 */
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <iterator>
-#include <regex.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <errno.h>
-
-using namespace std;
+#include "library.h"
 
 typedef struct alignLib{
 	map<string, int>alignWordLib;	//For basic Align Word(Map)
@@ -25,12 +13,8 @@ typedef struct alignLib{
 
 }ALIGNPOOL;
 
-//Divide Sentence base on flag character
-int explode(char divideChar, string originalString, vector<string> &stringAry);
 //Merge Phrase by some Rule!!!
 string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string basicWord);
-//integer to string
-string int2str(int &i);
 
 int main(int argc, char* argv[]){
 	fstream fin, fin2, fout;
@@ -122,22 +106,6 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-int explode(char divideChar, string originalString, vector<string> &stringAry){
-	int flag = 0, preFlag = 0 ,index = 0;
-	int length = originalString.length();
-	string tmpStr;
-	stringAry.clear();
-	while(flag = originalString.find(divideChar, flag)){
-		tmpStr = originalString.substr(preFlag, flag-preFlag);
-		stringAry.push_back(tmpStr);
-		index++;
-		if(flag > length || flag < 0){return index;}
-		flag++;
-		preFlag = flag;
-	}
-	return -1;
-}
-
 string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord){
 	string tmpStr = "", buf;
 	int i, flag, posHead, posTail, tmpPos1, tmpPos2;
@@ -187,9 +155,3 @@ string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord
 	return tmpStr;
 }
 
-string int2str(int &i) {
-	string s;
-	stringstream ss(s);
-	ss << i;
-	return ss.str();
-}
