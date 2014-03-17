@@ -57,7 +57,7 @@ int main(int argc, char* argv[]){
 	//Judge Result
 	fin.open(ALIGN_PATH.c_str(), ios::in);
 	fout.open(EVALUTE_RESULT_PATH.c_str(), ios::out);
-	while(!fin.eof()){
+	while(!fin.eof()){//For each Align Result
 		fin.getline(buf, 4096);
 		tmpStr.assign(buf);
 		//Divide Word
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]){
 			for(loopCount = 0; loopCount < wordLib[chWord].alignCount; loopCount++){//For each align lib
 				if(wordLib[chWord].enWord[loopCount] == alignWord){//Correct Align
 					correctAlign++;
+					wordLib[chWord].enWord[loopCount] = "";
 					fout << chWord << "," << alignWord << endl;
 					break;
 				}
