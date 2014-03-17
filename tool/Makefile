@@ -10,7 +10,7 @@ all: library
 	${CC} chPreProcess.cpp ${CFLAGS} -o chPreProcess.out
 	${CC} divideLaw.cpp ${CFLAGS} -o divideLaw.out
 library: library.cpp
-	${CC} library.h library.cpp ${CFLAGS} -c
+	${CC} library.h library.cpp -O2 -std=c++0x -c
 phraseMerge: phraseMerge.cpp
 	${CC} phraseMerge.cpp ${CFLAGS} -o phraseMerge.out
 evaluation: evaluation.cpp

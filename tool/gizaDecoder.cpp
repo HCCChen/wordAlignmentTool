@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
 	int pos1, pos2, loopIdx;
 	int sourceIdx, targetIdx;
 	char buf[4096];
-	string strBuf, subStrBuf;
+	string strBuf, subStrBuf, alignScore;
 
 	//Load Word-Index File
 	loopIdx = 2;
@@ -62,9 +62,12 @@ int main(int argc, char* argv[]){
 		subStrBuf = strBuf.substr(pos1 + 1, pos2 - pos1);
 		targetIdx = atoi(subStrBuf.c_str());
 
-		subStrBuf = strBuf.substr(pos2 + 1);
-		
-		fout << chLib[sourceIdx] << "," << enLib[targetIdx] << "," << subStrBuf << endl;
+		alignScore = strBuf.substr(pos2 + 1);
+	
+		//Filter and output	
+		if(alignScore.find('e') != string::npos){continue;}	//Probability is too low
+		if(chLib[sourceIdx].length() < 6){continue;}
+		fout << chLib[sourceIdx] << "," << enLib[targetIdx] << "," << alignScore << endl;
 	}
 	
 	
