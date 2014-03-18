@@ -3,10 +3,7 @@
 	Date: 2014//
 	Target: 
 */
-#include <iostream>
-#include <string>
-#include <vector>
-#include <fstream>
+#include "library.h"
 using namespace std;
 
 int main(int argc, char* argv[]){

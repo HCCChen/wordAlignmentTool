@@ -66,6 +66,8 @@ int main(int argc, char* argv[]){
 		pos2 = tmpStr.find_last_of(',');
 		chWord = tmpStr.substr(0, pos1);
 		alignWord = tmpStr.substr(pos1+1, pos2 - pos1 - 1);
+		if(alignWord.length() < 3){continue;}
+		cout << alignWord << endl;
 		//Judge is Align correct.
 		if(wordLib.find(chWord) == wordLib.end()){//Miss align
 			missAlign++;
