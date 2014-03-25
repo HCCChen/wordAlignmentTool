@@ -10,9 +10,9 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
-	const string SOURCE_LANGUAGE_PATH = "../wordAlignment/chBaseTrain.vcb";
-	const string TARGET_LANGUAGE_PATH = "../wordAlignment/enBaseTrain.vcb";
-	const string GIZA_RESULT_PATH = "../wordAlignment/c2e.t3.final";
+	const string SOURCE_LANGUAGE_PATH = "../giza++/chBaseTrain.vcb";
+	const string TARGET_LANGUAGE_PATH = "../giza++/enBaseTrain.vcb";
+	const string GIZA_RESULT_PATH = "../giza++/c2e.t3.final";
 	const string OUTPUT_PATH = "../data/gizaDecodeResult";
 	fstream fin, fout;
 	string chLib[50000], enLib[50000];

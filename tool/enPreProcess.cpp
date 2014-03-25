@@ -3,9 +3,7 @@
 	Date: 2014/2/28
 	Target: 
 */
-#include <iostream>
-#include <cstring>
-#include <fstream>
+#include "library.h"
 using namespace std;
 
 int main(int argc, char* argv[]){
@@ -13,8 +11,11 @@ int main(int argc, char* argv[]){
 	const string EN_FIX_LAW_PATH = "../data/enBaseTrain";
 	fstream fin, fout;
 	char buf[4096];
-	string lawSentence;
+	string lawSentence, emptyStr="";
 	unsigned int loopCount;
+	string punctuation[14] = {",",".",";",":","(",")","\"","\'", "\r"};
+	int i;
+
 
 	fin.open(EN_LAW_PATH.c_str(), ios::in);
 	fout.open(EN_FIX_LAW_PATH.c_str(), ios::out);
@@ -26,6 +27,11 @@ int main(int argc, char* argv[]){
 				}
 			}
 			lawSentence.assign(buf);
+			for(i = 0; i < 9; i++){
+				if(lawSentence.find(punctuation[i]) != string::npos){
+					lawSentence = strReplaceAll(lawSentence, punctuation[i], emptyStr);
+				}
+			}
 			fout << lawSentence << endl;
 	}
 

@@ -14,7 +14,7 @@ void printResult(pair<string, ALIGNPOOL> p);
 fstream fout;
 
 int main(int argc, char* argv[]){
-	const string GIZA_RESULT_PATH = "../wordAlignment/c2e.A3.final";
+	const string GIZA_RESULT_PATH = "../giza++/c2e.A3.final";
 	const string OUTPUT_PATH = "../data/gizaA3DecodeResult";
 	fstream fin;
 	map<string, ALIGNPOOL> alignResult;

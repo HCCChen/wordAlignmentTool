@@ -8,3 +8,5 @@ rm ../data/chBaseTmp
 printf "\E[1;34;40m\tFlit Word \E[0m\n"
 ./chPreProcess.out
 ./enPreProcess.out
+cd ../data/
+cp chBaseTrain enBaseTrain ../giza++ 

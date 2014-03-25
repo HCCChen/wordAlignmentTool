@@ -16,7 +16,7 @@ int main(int argc, char* argv[]){
 	fstream fin, fout;
 	char buf[4096];
 	string tmpStr, mergeWord, wordPool[512], lawSentence, emptyStr="";
-	string punctuation[14] = {"，","。","、","；","：","＂","｛","｝","「","」","『","』","（","）"};
+	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』"," （"," ）"," 　", "\r"};
 	int wordPoolSize, i,j,k;
 	unsigned int loopCount, flag;
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
 			fin.getline(buf, 4096);
 			lawSentence.assign(buf);
 			//filter punctuation
-			for(i = 0; i < 14; i++){
+			for(i = 0; i < 16; i++){
 				if(lawSentence.find(punctuation[i]) != string::npos){
 					lawSentence = strReplaceAll(lawSentence, punctuation[i], emptyStr);
 				}
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
 				wordPoolSize = explode(' ', lawSentence, wordPool);
 				lawSentence = "";
 				for(loopCount = 0; loopCount < wordPoolSize-1; loopCount++){//for each word seg
-					if(wordPool[loopCount+1].length() < 1){break;}
+					if(wordPool[loopCount+1].length() < 1){continue;}
 					tmpStr = wordPool[loopCount] + wordPool[loopCount+1];
 					if(basicWordLib[tmpStr] != 1){//Not Find it!!
 						tmpStr = wordPool[loopCount] + ' ';
