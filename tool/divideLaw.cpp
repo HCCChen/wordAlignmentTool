@@ -12,12 +12,11 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
+#include "library.h"
 using namespace std;
 
 fstream foutCh, foutEn;
 
-//取得資料夾內所有檔案名稱
-int getdir(string dir, vector<string> &files);
 //讀檔並切分檔案
 bool divideLaw(string filePath);
 //過濾干擾字串
@@ -37,20 +36,6 @@ int main(int argc, char* argv[]){
 		}
     }
 	return 0;
-}
-
-int getdir(string dir, vector<string> &files){
-    DIR *dp;//創立資料夾指標
-    struct dirent *dirp;
-    if((dp = opendir(dir.c_str())) == NULL){
-        cout << "Error(" << errno << ") opening " << dir << endl;
-        return errno;
-    }
-    while((dirp = readdir(dp)) != NULL){//如果dirent指標非空
-        files.push_back(string(dirp->d_name));//將資料夾和檔案名放入vector
-    }
-    closedir(dp);//關閉資料夾指標
-    return 0;
 }
 
 

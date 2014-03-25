@@ -3,11 +3,7 @@
 	Date: 2014/02/27
 	Target: 進入GIZA++之前的前處理
 */
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <map>
-#include <cstring>
+#include "library.h"
 using namespace std;
 
 int explode(char divideChar, string originalString, string* stringAry);
@@ -19,8 +15,9 @@ int main(int argc, char* argv[]){
 	map<string, int> basicWordLib;
 	fstream fin, fout;
 	char buf[4096];
-	string tmpStr, mergeWord, wordPool[512], lawSentence;
-	int wordPoolSize;
+	string tmpStr, mergeWord, wordPool[512], lawSentence, emptyStr="";
+	string punctuation[14] = {"，","。","、","；","：","＂","｛","｝","「","」","『","』","（","）"};
+	int wordPoolSize, i,j,k;
 	unsigned int loopCount, flag;
 
 	//Load Word Lib
@@ -38,13 +35,19 @@ int main(int argc, char* argv[]){
 	while(!fin.eof()){//For each Line
 			fin.getline(buf, 4096);
 			lawSentence.assign(buf);
+			//filter punctuation
+			for(i = 0; i < 14; i++){
+				if(lawSentence.find(punctuation[i]) != string::npos){
+					lawSentence = strReplaceAll(lawSentence, punctuation[i], emptyStr);
+				}
+			}
 			//Merge Sentence
-			flag = 1;
+			flag = 1;//Phrase merge flag
 			while(flag == 1){
 				flag = 0;
 				wordPoolSize = explode(' ', lawSentence, wordPool);
 				lawSentence = "";
-				for(loopCount = 0; loopCount < wordPoolSize-1; loopCount++){
+				for(loopCount = 0; loopCount < wordPoolSize-1; loopCount++){//for each word seg
 					if(wordPool[loopCount+1].length() < 1){break;}
 					tmpStr = wordPool[loopCount] + wordPool[loopCount+1];
 					if(basicWordLib[tmpStr] != 1){//Not Find it!!
