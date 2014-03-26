@@ -24,7 +24,7 @@ string filtExtraString(string source, string flag1, string flag2);
 
 int main(int argc, char* argv[]){
 	const string DIR_PATH = "../data/";
-	const string DIR_NAME = "BiLawSentence/";
+	const string DIR_NAME = "BiLawSentenceSubSet/";
 	vector<string> files = vector<string>();
 	getdir(DIR_PATH + DIR_NAME, files);
 	foutCh.open("../data/chBase", ios::out);

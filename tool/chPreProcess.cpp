@@ -42,25 +42,22 @@ int main(int argc, char* argv[]){
 				}
 			}
 			//Merge Sentence
-			flag = 1;//Phrase merge flag
-			while(flag == 1){
+			wordPoolSize = explode(' ', lawSentence, wordPool);
+			for(loopCount = 0, lawSentence = "", flag = 0; loopCount < wordPoolSize-1; loopCount++){//for each word seg
 				flag = 0;
-				wordPoolSize = explode(' ', lawSentence, wordPool);
-				lawSentence = "";
-				for(loopCount = 0; loopCount < wordPoolSize-1; loopCount++){//for each word seg
-					if(wordPool[loopCount+1].length() < 1){continue;}
-					tmpStr = wordPool[loopCount] + wordPool[loopCount+1];
-					if(basicWordLib[tmpStr] != 1){//Not Find it!!
-						tmpStr = wordPool[loopCount] + ' ';
-					}
-					else{//Find it!
-						tmpStr = wordPool[loopCount] + wordPool[loopCount+1] + ' ';
-						loopCount++;
-						flag = 1;
-					}
-					lawSentence += tmpStr;
+				tmpStr = wordPool[loopCount] + wordPool[loopCount+1];
+				if(basicWordLib[tmpStr] != 1){//Not Find it!!
+					tmpStr = wordPool[loopCount] + ' ';
 				}
-				lawSentence += wordPool[loopCount];
+				else{//Find it!
+					tmpStr = wordPool[loopCount] + wordPool[loopCount+1] + ' ';
+					loopCount++;
+					flag = 1;
+				}
+				lawSentence += tmpStr;
+			}
+			if(flag == 1){
+			//	lawSentence += wordPool[loopCount];
 			}
 			fout << lawSentence << endl;
 	}
