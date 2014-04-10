@@ -24,15 +24,15 @@ int main(int argc, char* argv[]){
 		EVALUTE_RESULT_PATH.assign(argv[2]);
 	}
 	else{
-		ALIGN_PATH = "../data/gizaDecodeResult";
+		ALIGN_PATH = "../data/alignResult";
 		EVALUTE_RESULT_PATH = "../data/evaluteResult";
 	}
 	map<string, alignLib> wordLib;
 	fstream fin, fout;
 	char buf[4096];
 	string tmpStr, chWord, alignWord;
-	int pos1, pos2, loopCount;
-	int correctAlign = 0, missAlign = 0, totalAlign = 0, alignLibCount = 0;
+	int pos1, pos2, loopCount, partErrorFlag;
+	int correctAlign = 0, partErrorAlign = 0 , missAlign = 0, totalAlign = 0, alignLibCount = 0;
 	//load align lib
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
@@ -67,19 +67,25 @@ int main(int argc, char* argv[]){
 		chWord = tmpStr.substr(0, pos1);
 		alignWord = tmpStr.substr(pos1+1, pos2 - pos1 - 1);
 		if(alignWord.length() < 3){continue;}
-		cout << alignWord << endl;
 		//Judge is Align correct.
 		if(wordLib.find(chWord) == wordLib.end()){//Miss align
 			missAlign++;
 		}
 		else{//Has Align
-			for(loopCount = 0; loopCount < wordLib[chWord].alignCount; loopCount++){//For each align lib
+			for(loopCount = 0, partErrorFlag = -1; loopCount < wordLib[chWord].alignCount; loopCount++){//For each align lib
 				if(wordLib[chWord].enWord[loopCount] == alignWord){//Correct Align
 					correctAlign++;
 					wordLib[chWord].enWord[loopCount] = "";
 					fout << chWord << "," << alignWord << endl;
 					break;
 				}
+				if(wordLib[chWord].enWord[loopCount].find(alignWord) != string::npos){
+					partErrorFlag = loopCount;
+				}
+			}
+			if(loopCount >= wordLib[chWord].alignCount && partErrorFlag != -1){
+				partErrorAlign++;
+				fout << "\t" << chWord << "," << alignWord << "," << wordLib[chWord].enWord[partErrorFlag] << endl;
 			}
 		}
 	}
@@ -88,7 +94,8 @@ int main(int argc, char* argv[]){
 	fout << "Align Lib Count: " << alignLibCount << " Pairs" << endl;
 	fout << "Total Align Word: " << totalAlign << " words" << endl;
 	fout << "Correct Align Word: " << correctAlign << " words" << endl;
-	fout << "Error Align Word: " << totalAlign - correctAlign - missAlign << " words" << endl;
+	fout << "Part Error Align Word: " << partErrorAlign << " words" << endl;
+	fout << "Full Error Align Word: " << totalAlign - correctAlign - missAlign - partErrorAlign << " words" << endl;
 	fout << "Miss Align Word: " << missAlign << " words" << endl;
 	fout << "Alignment Correct Rate(correctAlign/Not Miss Align): " << (double)correctAlign*100/(double)(totalAlign-missAlign) << "%" << endl;
 	fin.close();
