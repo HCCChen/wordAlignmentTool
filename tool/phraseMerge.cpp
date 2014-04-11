@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord){
+string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord){//For each word seg
 	string tmpStr = "", buf;
 	int i, flag, posHead, posTail, tmpPos1, tmpPos2;
 	string *prepLib = new string[21]{"at", "on", "in", "to", "for", "of", "from", "by", "such", "who", "what", "where", "when", "why", "how", "is", "are", "am", "a", "an", "the"};

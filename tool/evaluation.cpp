@@ -3,11 +3,7 @@
 	Date: 2014/3/4
 	Target: Evaluate Word Alignment result
 */
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <map>
-using namespace std;
+#include "library.h"
 
 typedef struct ALIGNLIB{
 	string enWord[32];
@@ -16,6 +12,7 @@ typedef struct ALIGNLIB{
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign";
+	const string EN_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
 
@@ -28,11 +25,12 @@ int main(int argc, char* argv[]){
 		EVALUTE_RESULT_PATH = "../data/evaluteResult";
 	}
 	map<string, alignLib> wordLib;
+	vector<string> enSpecialLib;
 	fstream fin, fout;
 	char buf[4096];
 	string tmpStr, chWord, alignWord;
-	int pos1, pos2, loopCount, partErrorFlag;
-	int correctAlign = 0, partErrorAlign = 0 , missAlign = 0, totalAlign = 0, alignLibCount = 0;
+	int pos1, pos2, loopCount, partErrorFlag, i, filtFlag;
+	int correctAlign = 0, partErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0;
 	//load align lib
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
@@ -53,6 +51,15 @@ int main(int argc, char* argv[]){
 		}
 	}
 	fin.close();
+	
+	fin.open(EN_LIB_PATH.c_str(), ios::in);
+	while(!fin.eof()){
+		fin.getline(buf, 4096);
+		tmpStr.assign(buf);
+		enSpecialLib.push_back(tmpStr);
+	}
+	fin.close();
+
 
 	//Judge Result
 	fin.open(ALIGN_PATH.c_str(), ios::in);
@@ -60,15 +67,25 @@ int main(int argc, char* argv[]){
 	while(!fin.eof()){//For each Align Result
 		fin.getline(buf, 4096);
 		tmpStr.assign(buf);
+		filtFlag = 0;
 		//Divide Word
 		totalAlign++;
 		pos1 = tmpStr.find(',');
 		pos2 = tmpStr.find_last_of(',');
 		chWord = tmpStr.substr(0, pos1);
 		alignWord = tmpStr.substr(pos1+1, pos2 - pos1 - 1);
-		if(alignWord.length() < 3){continue;}
+		//Filter
+		for(i = 0; i < enSpecialLib.size()-1; i++){
+			if(alignWord == enSpecialLib[i]){
+				filtFlag = 1;
+				break;
+			}
+		}
 		//Judge is Align correct.
-		if(wordLib.find(chWord) == wordLib.end()){//Miss align
+		if(filtFlag == 1){
+			dropAlign++;
+		}
+		else if(wordLib.find(chWord) == wordLib.end()){//Miss align
 			missAlign++;
 		}
 		else{//Has Align
@@ -95,7 +112,8 @@ int main(int argc, char* argv[]){
 	fout << "Total Align Word: " << totalAlign << " words" << endl;
 	fout << "Correct Align Word: " << correctAlign << " words" << endl;
 	fout << "Part Error Align Word: " << partErrorAlign << " words" << endl;
-	fout << "Full Error Align Word: " << totalAlign - correctAlign - missAlign - partErrorAlign << " words" << endl;
+	fout << "Full Error Align Word: " << totalAlign - correctAlign - missAlign - partErrorAlign - dropAlign << " words" << endl;
+	fout << "Drop Error Align Word: " << dropAlign << " words" << endl;
 	fout << "Miss Align Word: " << missAlign << " words" << endl;
 	fout << "Alignment Correct Rate(correctAlign/Not Miss Align): " << (double)correctAlign*100/(double)(totalAlign-missAlign) << "%" << endl;
 	fin.close();
