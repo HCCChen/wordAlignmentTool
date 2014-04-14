@@ -26,6 +26,8 @@ int main(int argc, char* argv[]){
 	string tmpStr, baseWord, alignWord, mergeResult;
 	string chLaw, enLaw;
 	map<string, ALIGNPOOL> alignLib;	//Map of structure of map
+	map<string, int> alignResult;	//Map of structure of map
+	map<string, int>::iterator it;
 	vector<string> chWordSeg;
 	vector<string> enWordSeg;
 	vector<int> enWordFlag;
@@ -55,7 +57,6 @@ int main(int argc, char* argv[]){
 	//Merge Phrase
 	fin.open(CH_LAW_PATH.c_str(), ios::in);
 	fin2.open(EN_LAW_PATH.c_str(), ios::in);
-	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	while(!fin.eof() && !fin2.eof()){//For each Pair
 		//Load Law Sentence info
 		fin.getline(buf, 65536);
@@ -81,8 +82,15 @@ int main(int argc, char* argv[]){
 				}
 				if(flag != 0){
 					mergeResult = mergePhrase(enWordSeg, enWordFlag, chWordSeg[i]);
-					if(mergeResult.length() >= 3){
-						fout << chWordSeg[i] << "," << mergeResult << ",0" << endl;
+					if(mergeResult.length() >= 4){//Correct merge -> save it!
+						tmpStr = chWordSeg[i] + "," + mergeResult;
+						if(alignResult.find(tmpStr) == alignResult.end()){//New result
+							alignResult[tmpStr] = 1;
+						}
+						else{
+							alignResult[tmpStr]++;
+						}
+						//fout << chWordSeg[i] << "," << mergeResult << ",0" << endl;
 					}
 				}
 			}
@@ -90,6 +98,14 @@ int main(int argc, char* argv[]){
 	}
 	fin.close();
 	fin2.close();
+	//Output Result
+	fout.open(OUTPUT_PATH.c_str(), ios::out);
+	for(it = alignResult.begin(); it != alignResult.end(); it++){
+		if(it->second > 2){
+			fout << it->first << "," << it->second << endl;
+		}
+	}
+
 	fout.close();
 
 /*Show align Lib
@@ -154,4 +170,3 @@ string mergePhrase(vector<string> wordSeg, vector<int> wordFlag, string baseWord
 	tmpStr = tmpStr.substr(0, tmpStr.length()-1);
 	return tmpStr;
 }
-
