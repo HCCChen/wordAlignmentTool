@@ -5,7 +5,7 @@ printf "\E[0;33;40mPre-Processing of Word Alignment! \E[0m\n"
 cd tool 
 ./preProcess.sh
 printf "\E[0;33;40mAlign Word By GIZA++! \E[0m\n"
-cd ../wordAlignment
+cd ../giza++
 ./alignWord.sh
 printf "\E[0;33;40mPost-Processing of Word Alignment! \E[0m\n"
 cd ../tool

@@ -1,0 +1,6 @@
+*.out
+*.o
+*.gch
+data/
+giza++/
+scws-1.2.2/
