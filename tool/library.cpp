@@ -47,6 +47,22 @@ int explode(char divideChar, string originalString, vector<string> &stringAry){
 	return -1;
 }
 
+int explode(string divideStr, string originalString, vector<string> &stringAry){
+	int flag = 0, preFlag = 0 ,index = 0;
+	int length = originalString.length();
+	string tmpStr;
+	stringAry.clear();
+	while(flag = originalString.find(divideStr, flag)){
+		tmpStr = originalString.substr(preFlag, flag-preFlag);
+		stringAry.push_back(tmpStr);
+		index++;
+		if(flag > length || flag < 0){return index;}
+		flag += divideStr.length();
+		preFlag = flag;
+	}
+	return -1;
+}
+
 
 string int2str(int &i) {
 	string s;

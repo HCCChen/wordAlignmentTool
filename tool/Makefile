@@ -28,6 +28,5 @@ divideLaw: divideLaw.cpp
 	${CC} divideLaw.cpp ${CFLAGS} -o divideLaw.out
 alignmentFilter: alignmentFilter.cpp
 	${CC} alignmentFilter.cpp ${CFLAGS} -o alignmentFilter.out
-	
 clear:
 	rm *.out

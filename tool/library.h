@@ -30,5 +30,6 @@ string int2str(int &i);
 int str2int(string str);
 //Divide Sentence base on flag character
 int explode(char divideChar, string originalString, vector<string> &stringAry);
+int explode(string divideStr, string originalString, vector<string> &stringAry);
 //Replace all sub_string
 string strReplaceAll(string sources, string originStr, string targetStr);

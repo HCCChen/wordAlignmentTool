@@ -2,6 +2,7 @@
 	Author: Paul Chen
 	Date: 2014/02/27
 	Target: 切分法規資料，分成中/英文版本
+	實作anchor切分句子(；/。)
 */
 #include <iostream>
 #include <vector>
@@ -21,6 +22,8 @@ fstream foutCh, foutEn;
 bool divideLaw(string filePath);
 //過濾干擾字串
 string filtExtraString(string source, string flag1, string flag2);
+//計算特定字串出現個數
+int countSubstrFreq(string sources, string substr);
 
 int main(int argc, char* argv[]){
 	const string DIR_PATH = "../data/";
@@ -51,9 +54,14 @@ string filtExtraString(string source, char flag1, char flag2){
 
 bool divideLaw(string filePath){
 	fstream fin;
-	int pairFlag = 0;
+	int i;
+	int pairFlag = 0, anchorChCount, anchorEnCount;
 	char buf[4096];
 	string lawSentence, chBuf, enBuf;
+	string anchorFlagCh = "。";
+	string anchorFlagEn = ".";
+	vector<string> subSentenceCh = vector<string>();
+	vector<string> subSentenceEn = vector<string>();
 	vector<string> chStack = vector<string>();
 	vector<string> enStack = vector<string>();
 	regex_t regexComment;
@@ -90,9 +98,23 @@ bool divideLaw(string filePath){
 				if( !reti2 ){//中文文句包含英文
 					return false;
 				}
+				//Anchor Divide
+				anchorChCount = countSubstrFreq(chBuf, anchorFlagCh);
+				anchorEnCount = countSubstrFreq(enBuf, anchorFlagEn);
+				if(anchorChCount == anchorEnCount && anchorChCount > 1){//Can divide
+					explode(anchorFlagCh, chBuf, subSentenceCh);
+					explode(anchorFlagEn, enBuf, subSentenceEn);
+					for(i = 0; i < subSentenceCh.size()-1; i++){
+						cout << subSentenceCh[i] << " : " << subSentenceEn[i] << endl;
+						chStack.push_back(subSentenceCh[i]);
+						enStack.push_back(subSentenceEn[i]);
+					}
+				}
 				//合法對句
-				chStack.push_back(chBuf);
-				enStack.push_back(enBuf);
+				else{
+					chStack.push_back(chBuf);
+					enStack.push_back(enBuf);
+				}
 				
 			break;
 		}
@@ -105,4 +127,15 @@ bool divideLaw(string filePath){
     	foutEn << *it << endl;
 	}
 	return true;
+}
+
+
+int countSubstrFreq(string sources, string substr){
+	int pos, freq = 0;
+	pos = sources.find(substr);
+	while(pos != string::npos){
+		freq++;
+		pos = sources.find(substr, pos + substr.length());
+	}
+	return freq;
 }
