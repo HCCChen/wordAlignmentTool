@@ -58,8 +58,8 @@ bool divideLaw(string filePath){
 	int pairFlag = 0, anchorChCount, anchorEnCount;
 	char buf[4096];
 	string lawSentence, chBuf, enBuf;
-	string anchorFlagCh = "。";
-	string anchorFlagEn = ".";
+	string anchorFlagCh = "。", anchorFlagEn = ".";
+	string anchorFlagCh2 = "；", anchorFlagEn2 = ";";
 	vector<string> subSentenceCh = vector<string>();
 	vector<string> subSentenceEn = vector<string>();
 	vector<string> chStack = vector<string>();
@@ -67,6 +67,7 @@ bool divideLaw(string filePath){
 	regex_t regexComment;
 	regex_t regexLanguage;
 	int reti, reti2;
+	size_t pos;
 	char msgbuf[60000];
 	/* Compile regular expression */
 	reti = regcomp(&regexComment, "[\[]", 0);
@@ -98,23 +99,41 @@ bool divideLaw(string filePath){
 				if( !reti2 ){//中文文句包含英文
 					return false;
 				}
+				//Remove "\r\n"
+				chBuf = chBuf.substr(0,chBuf.find("\r"));
+				enBuf = enBuf.substr(0,enBuf.find("\r"));
 				//Anchor Divide
 				anchorChCount = countSubstrFreq(chBuf, anchorFlagCh);
 				anchorEnCount = countSubstrFreq(enBuf, anchorFlagEn);
+				//------------------------
+//				anchorChCount = 1;
+//				anchorEnCount = 1;
+				//------------------------
+/*
 				if(anchorChCount == anchorEnCount && anchorChCount > 1){//Can divide
 					explode(anchorFlagCh, chBuf, subSentenceCh);
 					explode(anchorFlagEn, enBuf, subSentenceEn);
 					for(i = 0; i < subSentenceCh.size()-1; i++){
-						cout << subSentenceCh[i] << " : " << subSentenceEn[i] << endl;
 						chStack.push_back(subSentenceCh[i]);
 						enStack.push_back(subSentenceEn[i]);
 					}
 				}
+				else if(countSubstrFreq(chBuf, anchorFlagCh2) == countSubstrFreq(enBuf, anchorFlagEn2) && countSubstrFreq(chBuf, anchorFlagCh2) > 1){	
+					anchorChCount = countSubstrFreq(chBuf, anchorFlagCh2);
+					anchorEnCount = countSubstrFreq(enBuf, anchorFlagEn2);
+					explode(anchorFlagCh2, chBuf, subSentenceCh);
+					explode(anchorFlagEn2, enBuf, subSentenceEn);
+					for(i = 0; i < subSentenceCh.size()-1; i++){
+						chStack.push_back(subSentenceCh[i]);
+						enStack.push_back(subSentenceEn[i]);
+					}
+
+				}
 				//合法對句
-				else{
+				else{*/
 					chStack.push_back(chBuf);
 					enStack.push_back(enBuf);
-				}
+//				}
 				
 			break;
 		}
