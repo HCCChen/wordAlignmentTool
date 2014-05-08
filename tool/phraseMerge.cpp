@@ -82,7 +82,7 @@ int main(int argc, char* argv[]){
 				}
 				if(flag != 0){
 					mergeResult = mergePhrase(enWordSeg, enWordFlag, chWordSeg[i]);
-					if(mergeResult.length() >= 4){//Correct merge -> save it!
+					if(mergeResult.length() >= 3){//Correct merge -> save it!
 						tmpStr = chWordSeg[i] + "," + mergeResult;
 						if(alignResult.find(tmpStr) == alignResult.end()){//New result
 							alignResult[tmpStr] = 1;
@@ -101,9 +101,9 @@ int main(int argc, char* argv[]){
 	//Output Result
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	for(it = alignResult.begin(); it != alignResult.end(); it++){
-		if(it->second > 2){
+	//	if(it->second > 2){
 			fout << it->first << "," << it->second << endl;
-		}
+	//	}
 	}
 
 	fout.close();

@@ -10,6 +10,7 @@ all: library
 	${CC} chPreProcess.cpp ${CFLAGS} -o chPreProcess.out
 	${CC} divideLaw.cpp ${CFLAGS} -o divideLaw.out
 	${CC} alignmentFilter.cpp ${CFLAGS} -o alignmentFilter.out
+	${CC} removeKnownAlign.cpp ${CFLAGS} -o removeKnownAlign.out
 library: library.cpp
 	${CC} library.h library.cpp -O2 -std=c++0x -c
 phraseMerge: phraseMerge.cpp
@@ -28,5 +29,7 @@ divideLaw: divideLaw.cpp
 	${CC} divideLaw.cpp ${CFLAGS} -o divideLaw.out
 alignmentFilter: alignmentFilter.cpp
 	${CC} alignmentFilter.cpp ${CFLAGS} -o alignmentFilter.out
+removeKnownAlign: removeKnownAlign.cpp
+	${CC} removeKnownAlign.cpp ${CFLAGS} -o removeKnownAlign.out
 clear:
 	rm *.out

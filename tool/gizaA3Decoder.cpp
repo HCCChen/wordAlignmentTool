@@ -98,9 +98,9 @@ void printResult(pair<string, ALIGNPOOL> p){
 	map<string, int> mergeLib = p.second.mergeWord;
 	map<string, int>::iterator iter;
 	for(iter = mergeLib.begin(); iter != mergeLib.end(); iter++){
-		if(iter->second > 2){
+//		if(iter->second > 2){
 			fout << p.first << ',' << iter->first << "," << iter->second << endl;
-		}
+//		}
 	}
 
 }

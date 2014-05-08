@@ -65,7 +65,7 @@ int main(int argc, char* argv[]){
 		alignScore = strBuf.substr(pos2 + 1);
 	
 		//Filter and output	
-		if(alignScore.find('e') != string::npos){continue;}	//Probability is too low
+		//if(alignScore.find('e') != string::npos){continue;}	//Probability is too low
 		if(chLib[sourceIdx].length() < 6){continue;}
 		fout << chLib[sourceIdx] << "," << enLib[targetIdx] << "," << alignScore << endl;
 	}

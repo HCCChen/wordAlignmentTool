@@ -16,7 +16,7 @@ int checkLib(string inputStr, vector<string> &basicLib);
 
 int main(int argc, char* argv[]){
 	const string CH_WORD_LIB_PATH = "../data/knownChWord";
-	const string CH_LAW_PATH = "../data/chBaseTmp";
+	const string CH_LAW_PATH = "../data/chBaseTmp2";
 	const string CH_FIX_LAW_PATH = "../data/chBaseTrain";
 //	map<string, int> basicWordLib;//<known string, using time>
 	vector<string> basicWordLib;
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
 	char buf[4096];
 	string tmpStr, mergeWord, wordPool[512], lawSentence, emptyStr="";
 	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』"," （"," ）"," 　", "\r"};
-	int wordPoolSize, i,j,k, flag, inLineFlag;
+	int wordPoolSize, i,j,k, flag, inLineFlag, checkLongerFlag;
 
 	//Load Word Lib
 	fin.open(CH_WORD_LIB_PATH.c_str(), ios::in);
@@ -52,7 +52,8 @@ int main(int argc, char* argv[]){
 			}
 			//Merge Sentence
 			wordPoolSize = explode(' ', lawSentence, wordPool);
-			for(i = 0, lawSentence = "",tmpStr = "", inLineFlag = -1; i < wordPoolSize; i++){//for each word seg
+			for(i = 0, lawSentence = "",tmpStr = "", inLineFlag = -1, checkLongerFlag = 0
+				; i < wordPoolSize; i++){//for each word seg
 				tmpStr += wordPool[i];
 				//Check known word lib
 				flag = checkLib(tmpStr, basicWordLib);
@@ -63,6 +64,14 @@ int main(int argc, char* argv[]){
 							tmpStr = "";
 							inLineFlag = -1;				
 						}
+						else if(inLineFlag != -1 && checkLongerFlag == 1){//Have Correct Buffer -> back to correct merge
+							i = inLineFlag;
+							checkLongerFlag = 0;
+							inLineFlag = -1;				
+							lawSentence += mergeWord + ' ';
+							mergeWord = "";
+							tmpStr = "";
+						}
 						else{//Have Buffer-> back to first seg
 							i = inLineFlag;
 							lawSentence += wordPool[i] + ' ';
@@ -70,10 +79,10 @@ int main(int argc, char* argv[]){
 							inLineFlag = -1;				
 						}
 					break;
-					case 1://All match->Merge
-						lawSentence += tmpStr + ' ';
-						tmpStr = "";
-						inLineFlag = -1;
+					case 1://All match->Check have longer or not
+						mergeWord = tmpStr;
+						inLineFlag = i;
+						checkLongerFlag = 1;
 					break;
 					case 2://Part match->continue check
 						if(inLineFlag == -1){
@@ -109,7 +118,7 @@ int explode(char divideChar, string originalString, string* stringAry){
 	return -1;
 }
 
-int checkLib(string inputStr, vector<string> &basicLib){
+int checkLib(string inputStr, vector<string> &basicLib){//Longest first
 	int i, flag;
 	//Default: no match
 	for(i = 0, flag = 0; i < basicLib.size(); i++){

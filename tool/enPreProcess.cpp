@@ -7,7 +7,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
-	const string EN_LAW_PATH = "../data/enBase";
+	const string EN_LAW_PATH = "../data/enBaseTmp2";
 	const string EN_FIX_LAW_PATH = "../data/enBaseTrain";
 	fstream fin, fout;
 	char buf[4096];
