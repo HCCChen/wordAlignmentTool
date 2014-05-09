@@ -86,3 +86,22 @@ string strReplaceAll(string sources, string originStr, string targetStr){
 	}
 	return sources;
 }
+
+string mergeSequence(string mergeSeq, vector<string> wordSeq){
+	int i;
+	string result = "";
+	for(i = 0; i < wordSeq.size() ;i++){
+		result += wordSeq[i] + mergeSeq;
+	}
+	return result;
+}
+
+string strToLower(string str){
+	int i;
+	for(i = 0; i < str.length(); i++){
+		if(str[i] >= 'A' && str[i] <= 'Z'){//To lower
+			str[i] += 'a' - 'A';
+		}
+	}
+	return str;
+}

@@ -11,6 +11,7 @@ all: library
 	${CC} divideLaw.cpp ${CFLAGS} -o divideLaw.out
 	${CC} alignmentFilter.cpp ${CFLAGS} -o alignmentFilter.out
 	${CC} removeKnownAlign.cpp ${CFLAGS} -o removeKnownAlign.out
+	${CC} revertEnglishWord.cpp ${CFLAGS} -o revertEnglishWord.out
 library: library.cpp
 	${CC} library.h library.cpp -O2 -std=c++0x -c
 phraseMerge: phraseMerge.cpp
@@ -31,5 +32,7 @@ alignmentFilter: alignmentFilter.cpp
 	${CC} alignmentFilter.cpp ${CFLAGS} -o alignmentFilter.out
 removeKnownAlign: removeKnownAlign.cpp
 	${CC} removeKnownAlign.cpp ${CFLAGS} -o removeKnownAlign.out
+revertEnglishWord: revertEnglishWord.cpp
+	${CC} revertEnglishWord.cpp ${CFLAGS} -o revertEnglishWord.out
 clear:
 	rm *.out

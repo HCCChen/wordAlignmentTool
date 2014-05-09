@@ -33,3 +33,7 @@ int explode(char divideChar, string originalString, vector<string> &stringAry);
 int explode(string divideStr, string originalString, vector<string> &stringAry);
 //Replace all sub_string
 string strReplaceAll(string sources, string originStr, string targetStr);
+//Merge word sequence by particular word
+string mergeSequence(string mergeSeq, vector<string> wordSeq);
+//String to lower
+string strToLower(string str);

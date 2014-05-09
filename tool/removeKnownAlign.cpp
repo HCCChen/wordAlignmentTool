@@ -1,7 +1,7 @@
 /*
 	Author: Paul Chen
-	Date: 2014//
-	Target: 
+	Date: 2014/05/07
+	Target: Remove known align word
 */
 #include "library.h"
 using namespace std;
@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
 	const string CH_CONTEXT_PATH = "../data/chBaseTmp";
 	const string EN_CONTEXT_PATH = "../data/enBase";
 	const string CH_OUTPUT_PATH = "../data/chBaseTmp2";
-	const string EN_OUTPUT_PATH = "../data/enBaseTmp2";
+	const string EN_OUTPUT_PATH = "../data/enBaseTmp";
 	const string EMPTY_FLAG = "EMPTY";
 	char buf[4096];
 	vector<string> translateBuf;
