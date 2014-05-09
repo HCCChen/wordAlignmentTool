@@ -15,6 +15,14 @@ printf "\E[1;34;40m\tRevert Englist word! \E[0m\n"
 cd englishLemma/
 ./getLemma.sh ../../data/enBaseTmp ../../data/
 cd ../
+./revertEnglishWord.out
+
+printf "\E[1;34;40m\tRemove known align AGAIN! \E[0m\n"
+#enBase -> enBaseTmp
+cd ../data
+mv enBaseTmp2 enBase
+cd ../tool
+./removeKnownAlign.out
 
 printf "\E[1;34;40m\tPreprocess for biligual context \E[0m\n"
 ./chPreProcess.out

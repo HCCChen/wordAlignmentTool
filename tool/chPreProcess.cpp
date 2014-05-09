@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 	fstream fin, fout;
 	char buf[4096];
 	string tmpStr, mergeWord, wordPool[512], lawSentence, emptyStr="";
-	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』"," （"," ）"," 　", "\r"};
+	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』","（"," ）"," 　", "\r"};
 	int wordPoolSize, i,j,k, flag, inLineFlag, checkLongerFlag;
 
 	//Load Word Lib
@@ -50,6 +50,7 @@ int main(int argc, char* argv[]){
 					lawSentence = strReplaceAll(lawSentence, punctuation[i], emptyStr);
 				}
 			}
+/*
 			//Merge Sentence
 			wordPoolSize = explode(' ', lawSentence, wordPool);
 			for(i = 0, lawSentence = "",tmpStr = "", inLineFlag = -1, checkLongerFlag = 0
@@ -97,6 +98,7 @@ int main(int argc, char* argv[]){
 					lawSentence += wordPool[i] + ' ';
 				}
 			}
+*/
 			//Output to file
 			fout << lawSentence << endl;
 	}
