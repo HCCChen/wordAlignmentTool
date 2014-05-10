@@ -10,7 +10,7 @@ string removeInlineSubStr(string origin, string substr);
 string mergeSequenceVector(vector<string> wordSeq);
 
 int main(int argc, char* argv[]){
-	const string ALIGN_LIB_PATH = "../data/languageBase/cedict_ts.u8";
+	const string ALIGN_LIB_PATH = "../data/languageBase/cedictLib";
 	const string CH_CONTEXT_PATH = "../data/chBaseTmp";
 	const string EN_CONTEXT_PATH = "../data/enBase";
 	const string CH_OUTPUT_PATH = "../data/chBaseTmp2";

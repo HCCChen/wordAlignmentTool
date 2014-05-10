@@ -16,7 +16,7 @@ int checkLib(string inputStr, vector<string> &basicLib);
 
 int main(int argc, char* argv[]){
 	const string CH_WORD_LIB_PATH = "../data/knownChWord";
-	const string CH_LAW_PATH = "../data/chBaseTmp2";
+	const string CH_LAW_PATH = "../data/chBaseTmp";
 	const string CH_FIX_LAW_PATH = "../data/chBaseTrain";
 //	map<string, int> basicWordLib;//<known string, using time>
 	vector<string> basicWordLib;

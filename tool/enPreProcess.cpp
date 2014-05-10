@@ -11,7 +11,7 @@ int main(int argc, char* argv[]){
 	const string EN_FIX_LAW_PATH = "../data/enBaseTrain";
 	fstream fin, fout;
 	char buf[4096];
-	string lawSentence, emptyStr="";
+	string lawSentence, emptyStr=" ";
 	unsigned int loopCount;
 	string punctuation[14] = {",",".",";",":","(",")","\"","\'", "\r"};
 	int i;

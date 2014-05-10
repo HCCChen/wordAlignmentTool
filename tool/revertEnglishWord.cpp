@@ -7,9 +7,9 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
-	const string ENLIB_PATH = "../data/enBaseTmp.xml";
-	const string CONTEXT_PATH = "../data/enBaseTmp";
-	const string OUTPUT_PATH = "../data/enBaseTmp2";
+	const string ENLIB_PATH = "../data/enBase.xml";
+	const string CONTEXT_PATH = "../data/enBase";
+	const string OUTPUT_PATH = "../data/enBaseTmp";
 	char buf[4096];
 	string tmpStr, baseWord, lemmaWord, dividFlag = " ";
 	map<string, string> lemmaPair;
