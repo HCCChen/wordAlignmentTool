@@ -1,7 +1,7 @@
 /*
 	Author: Paul Chen
 	Date: 2014/3/16
-	Target: Decode Giza++ A3 result, index start from 2
+	Target: Decode Giza++ A3 result
 */
 #include "library.h"
 

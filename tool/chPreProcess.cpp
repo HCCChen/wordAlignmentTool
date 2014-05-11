@@ -7,15 +7,8 @@
 using namespace std;
 
 int explode(char divideChar, string originalString, string* stringAry);
-/*
-	return 0: no match
-	return 1: all match
-	return 2: part match
-*/
-int checkLib(string inputStr, vector<string> &basicLib);
 
 int main(int argc, char* argv[]){
-	const string CH_WORD_LIB_PATH = "../data/knownChWord";
 	const string CH_LAW_PATH = "../data/chBaseTmp";
 	const string CH_FIX_LAW_PATH = "../data/chBaseTrain";
 //	map<string, int> basicWordLib;//<known string, using time>
@@ -27,17 +20,6 @@ int main(int argc, char* argv[]){
 	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』","（"," ）"," 　", "\r"};
 	int wordPoolSize, i,j,k, flag, inLineFlag, checkLongerFlag;
 
-	//Load Word Lib
-	fin.open(CH_WORD_LIB_PATH.c_str(), ios::in);
-	while(!fin.eof()){
-		fin.getline(buf, 4096);
-		tmpStr.assign(buf);
-	//	basicWordLib[tmpStr] = 0;
-		basicWordLib.push_back(tmpStr);
-		basicWordFlag.push_back(0);
-	}
-	fin.close();
-	
 	//Load File And Merge it!
 	fin.open(CH_LAW_PATH.c_str(), ios::in);
 	fout.open(CH_FIX_LAW_PATH.c_str(), ios::out);
@@ -50,55 +32,30 @@ int main(int argc, char* argv[]){
 					lawSentence = strReplaceAll(lawSentence, punctuation[i], emptyStr);
 				}
 			}
-/*
 			//Merge Sentence
 			wordPoolSize = explode(' ', lawSentence, wordPool);
-			for(i = 0, lawSentence = "",tmpStr = "", inLineFlag = -1, checkLongerFlag = 0
-				; i < wordPoolSize; i++){//for each word seg
-				tmpStr += wordPool[i];
+//			fout << lawSentence << endl;
+			for(i = wordPoolSize-1, lawSentence = "",tmpStr = ""; i >= 0; i--){//for each word seg
+				tmpStr = wordPool[i];
 				//Check known word lib
-				flag = checkLib(tmpStr, basicWordLib);
-				switch(flag){
-					case 0://No match->output
-						if(inLineFlag == -1){//Without Buffer->output
-							lawSentence += tmpStr + ' ';
-							tmpStr = "";
-							inLineFlag = -1;				
-						}
-						else if(inLineFlag != -1 && checkLongerFlag == 1){//Have Correct Buffer -> back to correct merge
-							i = inLineFlag;
-							checkLongerFlag = 0;
-							inLineFlag = -1;				
-							lawSentence += mergeWord + ' ';
-							mergeWord = "";
-							tmpStr = "";
-						}
-						else{//Have Buffer-> back to first seg
-							i = inLineFlag;
-							lawSentence += wordPool[i] + ' ';
-							tmpStr = "";
-							inLineFlag = -1;				
-						}
-					break;
-					case 1://All match->Check have longer or not
-						mergeWord = tmpStr;
-						inLineFlag = i;
-						checkLongerFlag = 1;
-					break;
-					case 2://Part match->continue check
-						if(inLineFlag == -1){
-							inLineFlag = i;//Have Buffer
-						}
-						continue;
-					break;
+				if(tmpStr == "條"){
+					if(i-1 >= 0 && wordPool[i-1].find("第") != string::npos){
+						lawSentence = wordPool[i-1] + tmpStr + ' ' + lawSentence;
+						i--;
+					}
+					else if(i-2 >= 0 && wordPool[i-2].find("第") != string::npos){
+						lawSentence = wordPool[i-2] + wordPool[i-1] + tmpStr + ' ' + lawSentence;
+						i = i-2;
+					}
+				}
+				else if(tmpStr == "元" || tmpStr == "歲" || tmpStr == "項" || tmpStr == "款" || tmpStr == "小時" || tmpStr == "編" || tmpStr == "章"){
+					lawSentence = wordPool[i-1] + tmpStr + ' ' + lawSentence;
+					i--;
+				}
+				else{
+					lawSentence = tmpStr + ' ' + lawSentence;
 				}
 			}
-			if(inLineFlag != -1){//Have buffer -> Clear the buffer
-				for(i = inLineFlag; i < wordPoolSize; i++){
-					lawSentence += wordPool[i] + ' ';
-				}
-			}
-*/
 			//Output to file
 			fout << lawSentence << endl;
 	}
@@ -118,21 +75,4 @@ int explode(char divideChar, string originalString, string* stringAry){
 		preFlag = flag;
 	}
 	return -1;
-}
-
-int checkLib(string inputStr, vector<string> &basicLib){//Longest first
-	int i, flag;
-	//Default: no match
-	for(i = 0, flag = 0; i < basicLib.size(); i++){
-		//All match
-		if(inputStr == basicLib[i]){
-			flag = 1;
-			break;
-		}
-		//Part match
-		else if(flag == 0 && basicLib[i].find(inputStr) != string::npos){
-			flag = 2;
-		}
-	}
-	return flag;
 }

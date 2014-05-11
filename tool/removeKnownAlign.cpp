@@ -11,6 +11,7 @@ string mergeSequenceVector(vector<string> wordSeq);
 
 int main(int argc, char* argv[]){
 	const string ALIGN_LIB_PATH = "../data/languageBase/cedictLib";
+	const string ALIGN_LIB_PATH2 = "../data/languageBase/knownOtherAlignWord";
 	const string CH_CONTEXT_PATH = "../data/chBaseTmp";
 	const string EN_CONTEXT_PATH = "../data/enBase";
 	const string CH_OUTPUT_PATH = "../data/chBaseTmp2";
@@ -22,6 +23,7 @@ int main(int argc, char* argv[]){
 	string tmpStr, chWord, chSentence, enSentence;
 	fstream fin, fin2, fout, fout2;
 	int i, j, k, matchCount, matchFlag;
+/*
 	fin.open(ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){//Load known align lib
 		fin.getline(buf, 4096);
@@ -34,6 +36,17 @@ int main(int argc, char* argv[]){
 		}
 	}
 	fin.close();
+*/
+	fin.open(ALIGN_LIB_PATH2.c_str(), ios::in);
+	while(!fin.eof()){//Load known align lib
+		fin.getline(buf, 4096);
+		tmpStr.assign(buf);
+		chWord = tmpStr.substr(0, tmpStr.find(","));
+		tmpStr = tmpStr.substr(tmpStr.find(",")+1);
+		knownLib[chWord].push_back(tmpStr);
+	}
+	fin.close();
+
 
 	//Load Context
 	fin.open(CH_CONTEXT_PATH, ios::in);
