@@ -16,8 +16,9 @@ int main(int argc, char* argv[]){
 	const string EN_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
-	const double FILT_PROBABILITY = 0.1;
-	const int FILT_FREQUENCY = 3;
+	const double FILT_PROBABILITY = 0.2;
+	const int FILT_FREQUENCY = 1;//More than ...
+	const bool FILTER_SWITCH = true;//true = do filter
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
 
@@ -96,7 +97,7 @@ int main(int argc, char* argv[]){
 		}
 		else if(probability = atof(alignProbability.c_str())){
 			if(probability < FILT_PROBABILITY){filtFlag = 1;}
-			else if(probability >= 1 && probability < FILT_FREQUENCY){filtFlag = 1;}
+			else if(probability >= 1 && probability <= FILT_FREQUENCY){filtFlag = 1;}
 		}
 		for(i = 0; i < enSpecialLib.size()-1; i++){
 			if(alignWord == enSpecialLib[i]){
@@ -105,7 +106,7 @@ int main(int argc, char* argv[]){
 			}
 		}
 		//Judge is Align correct.
-		if(filtFlag == 1){
+		if(filtFlag == 1 && FILTER_SWITCH == true){
 			dropAlign++;
 			continue;
 		}

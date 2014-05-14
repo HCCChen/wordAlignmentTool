@@ -7,9 +7,9 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
-	const string CEDICT_PATH = "../data/languageBase/cedict_ts.u8";
+	const string CEDICT_PATH = "../data/languageBase/knownOtherAlignWord";
 	const string KNOWN_LIB_PATH = "../data/knownWordAlign";
-	const string OUTPUT_PATH = "../data/languageBase/cedictLib";
+	const string OUTPUT_PATH = "../data/languageBase/knownOtherAlignWordFix";
 	char buf[4096];
 	string tmpStr, word;
 	map<string, int> knownLib;
@@ -30,7 +30,7 @@ int main(int argc, char* argv[]){
 	while(!fin.eof()){//Load known align lib
 		fin.getline(buf, 4096);
 		tmpStr.assign(buf);
-		word = tmpStr.substr(0, tmpStr.find(" "));
+		word = tmpStr.substr(0, tmpStr.find(","));
 		if(knownLib.find(word) == knownLib.end()){
 			fout << tmpStr << endl;
 		}

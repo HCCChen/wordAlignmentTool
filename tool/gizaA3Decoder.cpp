@@ -23,8 +23,6 @@ int main(int argc, char* argv[]){
 	string chSentence, enSentence;
 	char buf[4096];
 
-	//Decode "c2e.t3.final"
-
 	fin.open(GIZA_RESULT_PATH, ios::in);
 	fout.open(OUTPUT_PATH, ios::out);
 	flag = 0;
@@ -57,9 +55,10 @@ int main(int argc, char* argv[]){
 
 bool decodeA3Result(string chSentence, string enSentence, map<string, ALIGNPOOL> &alignResult){
 	vector<string> chSeg, enSeg, alignIdx;
-	string chWord, chAlignIdx, alignMergeBuf;
+	string chWord = "", chAlignIdx, alignMergeBuf;
 	int i,j, pos1, pos2, preIdx;
 	//Divide English Word
+	enSentence = "NULL " + enSentence;
 	explode(' ', enSentence , enSeg);
 	//Divide Chinese Word and alignment number
 	explode(')', chSentence , chSeg);	//For each word and align result
@@ -71,20 +70,21 @@ bool decodeA3Result(string chSentence, string enSentence, map<string, ALIGNPOOL>
 		chAlignIdx = chSeg[i].substr(pos1+2, pos2-pos1-2);
 		if(chAlignIdx.length() < 2){continue;}
 		explode(' ', chAlignIdx, alignIdx);
-		for(j = 0, preIdx = -2, alignMergeBuf = ""; j < alignIdx.size()-1; j++){
+		for(j = 0, preIdx = -2, alignMergeBuf = ""; j < alignIdx.size()-1; j++){//For each align idx
 			//cout << chWord << ','<< enSeg[str2int(alignIdx[j])] << endl;
 			if(preIdx + 1 != str2int(alignIdx[j])){//Not continue index sequence or a head of new sequence
 				if(alignMergeBuf != ""){//Merge Finish, Save it!
-					if(alignResult[chWord].mergeWord.find(alignMergeBuf) == alignResult[chWord].mergeWord.end()){
+					if(alignResult[chWord].mergeWord.find(alignMergeBuf) == alignResult[chWord].mergeWord.end()){//New word
 						alignResult[chWord].mergeWord[alignMergeBuf] = 1;
 					}
 					else{
 						alignResult[chWord].mergeWord[alignMergeBuf]++;
 					}
 				}
+				//New phrase begin
 				alignMergeBuf = enSeg[str2int(alignIdx[j])];
 			}
-			else{
+			else{//Merge phrase
 				alignMergeBuf += " " + enSeg[str2int(alignIdx[j])];
 			}
 			preIdx = str2int(alignIdx[j]);
