@@ -1,20 +1,30 @@
 /*
 	Author: Paul Chen
 	Date: 2014/03/18
-	Target: Filt the wrong align result
+	Target: Filter and merge the wrong align result
 */
 #include "library.h"
 using namespace std;
 
+int getPairFrequency(string chWord, string enWord, vector<string> chContext, vector<string> enContext);
+
 int main(int argc, char* argv[]){
 	char buf[4096];
+	//"alignScore" could be alignment probability(double) or frequency(int)
 	string tmpStr, chWord, alignWord, alignScore;
+	const string INPUT_PATH = "../data/candidatePair";
 	const string OUTPUT_PATH = "../data/alignResult";
+	const string CH_CONTEXT_PATH = "../data/chBase";
+	const string EN_CONTEXT_PATH = "../data/enBase";
+	const string SPECIAL_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	vector<string> filePath;
+	vector<string> chContext;
+	vector<string> enContext;
+	map<string, int> filterLib;
 	fstream fin, fout;
 	map<string, int> alignResult;
 	map<string, int>::iterator iter;
-	int i, pos1, pos2;
+	int i, pos1, pos2, pairFrequency;
 
 	regex_t regexWord, regexAlign;
 	int reti, reti2;
@@ -28,15 +38,18 @@ int main(int argc, char* argv[]){
 		}
 	}
 	else{
-		cout << "Please Input File Name!!" << endl;
-		return 0;
+		filePath.push_back(INPUT_PATH);
 	}
-	//Load Alignment Result and record it!
 
-	for(i = 0; i < filePath.size(); i++){
-		cout << filePath[i] << endl;
+	//Load information file
+	loadFile(CH_CONTEXT_PATH, chContext);
+	loadFile(EN_CONTEXT_PATH, enContext);
+	loadFile(SPECIAL_LIB_PATH, filterLib);
+	//Load Alignment Result and record it!
+	for(i = 0; i < filePath.size(); i++){//For each file
 		fin.open(filePath[i].c_str(), ios::in);
-		while(!fin.eof()){
+		while(!fin.eof()){//For each pair
+			pairFrequency = 0;
 			fin.getline(buf, 4096);
 			tmpStr.assign(buf);
 			pos1 = tmpStr.find(',');
@@ -48,20 +61,34 @@ int main(int argc, char* argv[]){
 			//Filter
 			reti = regexec(&regexWord, chWord.c_str(), 0, NULL, 0);
 			reti2 = regexec(&regexAlign, alignWord.c_str(), 0, NULL, 0);
-			if( !reti || !reti2 || chWord.length() < 3 || alignWord.length() < 3 || alignScore.find('e') != string::npos){
+			if( !reti || !reti2 || chWord.length() < 3 || 
+				alignWord.length() < 3 || alignScore.find('e') != string::npos||
+				filterLib.find(alignWord) != filterLib.end()){
 				continue;
 			}
 			else if(alignResult.find(tmpStr) == alignResult.end()){
-				alignResult[tmpStr] = 1;
+				pairFrequency = getPairFrequency(chWord, alignWord, chContext, enContext);
+				alignResult[tmpStr] = pairFrequency;
 			}
 		}
 		fin.close();
 	}
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	for(iter = alignResult.begin(); iter != alignResult.end(); iter++){
-		fout << iter->first << endl;
+		fout << iter->first << "," << iter->second <<endl;
 	}
 	fout.close();
 
 	return 0;
+}
+
+
+int getPairFrequency(string chWord, string enWord, vector<string> chContext, vector<string> enContext){
+	int i, pairFreq;
+	for(i = 0, pairFreq = 0; i < chContext.size(); i++){
+		if(chContext[i].find(chWord) != string::npos && enContext[i].find(enWord) != string::npos){
+			pairFreq++;
+		}
+	}
+	return pairFreq;
 }

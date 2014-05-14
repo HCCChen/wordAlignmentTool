@@ -105,3 +105,35 @@ string strToLower(string str){
 	}
 	return str;
 }
+
+bool loadFile(string filename, vector<string> &container){
+	fstream fin;
+	char buf[4096];
+	string tmpStr;
+	fin.open(filename.c_str(), ios::in);
+	if(fin.eof()){return false;}
+	while(!fin.eof()){
+		fin.getline(buf, 4096);
+		tmpStr.assign(buf);
+		if(tmpStr.length() < 1){continue;}
+		container.push_back(tmpStr);
+	}
+	fin.close();
+	return true;
+}
+
+bool loadFile(string filename, map<string, int> &container){
+	fstream fin;
+	char buf[4096];
+	string tmpStr;
+	fin.open(filename.c_str(), ios::in);
+	if(fin.eof()){return false;}
+	while(!fin.eof()){
+		fin.getline(buf, 4096);
+		tmpStr.assign(buf);
+		if(tmpStr.length() < 1){continue;}
+		container[tmpStr] = 0;
+	}
+	fin.close();
+	return true;
+}

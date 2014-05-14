@@ -37,3 +37,7 @@ string strReplaceAll(string sources, string originStr, string targetStr);
 string mergeSequence(string mergeSeq, vector<string> wordSeq);
 //String to lower
 string strToLower(string str);
+//Load file to vector<string> without any process
+bool loadFile(string filename, vector<string> &container);
+//Load file to map<string, int> without any process
+bool loadFile(string filename, map<string, int> &container);

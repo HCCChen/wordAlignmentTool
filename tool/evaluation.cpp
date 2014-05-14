@@ -13,11 +13,11 @@ typedef struct ALIGNLIB{
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign";
-	const string EN_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
-	const double FILT_PROBABILITY = 0.2;
-	const int FILT_FREQUENCY = 1;//More than ...
+	const double FILT_PROBABILITY = 0.1;
+	const int FILT_ALIGNMENT_FREQUENCY = 1;//More than ...
+	const int FILT_CONTEXT_FREQUENCY = 1;//More than ...
 	const bool FILTER_SWITCH = true;//true = do filter
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
@@ -31,13 +31,13 @@ int main(int argc, char* argv[]){
 		EVALUTE_RESULT_PATH = "../data/evaluteResult";
 	}
 	map<string, alignLib> wordLib;
-	vector<string> enSpecialLib;
+	vector<string> candidateSeg;
 	fstream fin, fout, ferr1, ferr2;
 	char buf[4096];
-	string tmpStr, chWord, alignWord, alignProbability;
-	int pos1, pos2, loopCount, partErrorFlag, i, filtFlag, alignCountChWord = 0;
+	string tmpStr, chWord, alignWord, alignProbability, alignFrequency;
+	int pos1, pos2, pos3,loopCount, partErrorFlag, i, filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0;
 	int correctAlign = 0, partErrorAlign = 0, fullErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0, usedAlign = 0;
-	double probability;
+	double probability, frequency;
 	//load align lib
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
@@ -66,15 +66,6 @@ int main(int argc, char* argv[]){
 	}
 	fin.close();
 	
-	fin.open(EN_LIB_PATH.c_str(), ios::in);
-	while(!fin.eof()){
-		fin.getline(buf, 4096);
-		tmpStr.assign(buf);
-		enSpecialLib.push_back(tmpStr);
-	}
-	fin.close();
-
-
 	//Judge Result
 	fin.open(ALIGN_PATH.c_str(), ios::in);
 	fout.open(EVALUTE_RESULT_PATH.c_str(), ios::out);
@@ -86,26 +77,23 @@ int main(int argc, char* argv[]){
 		filtFlag = 0;
 		//Divide Word
 		totalAlign++;
-		pos1 = tmpStr.find(',');
-		pos2 = tmpStr.find_last_of(',');
-		chWord = tmpStr.substr(0, pos1);
-		alignWord = tmpStr.substr(pos1+1, pos2 - pos1 - 1);
-		alignProbability = tmpStr.substr(pos2+1);
+		explode(',', tmpStr, candidateSeg);
+		chWord = candidateSeg[0];
+		alignWord = candidateSeg[1];
+		alignProbability = candidateSeg[2];
+		alignFrequency = candidateSeg[3];
 		//-------------------Filter--------------------
 		if(alignProbability.find("e") != string::npos){
 			filtFlag = 1;
 		}
 		else if(probability = atof(alignProbability.c_str())){
 			if(probability < FILT_PROBABILITY){filtFlag = 1;}
-			else if(probability >= 1 && probability <= FILT_FREQUENCY){filtFlag = 1;}
+			else if(probability >= 1 && probability <= FILT_ALIGNMENT_FREQUENCY){filtFlag = 1;}
 		}
-		for(i = 0; i < enSpecialLib.size()-1; i++){
-			if(alignWord == enSpecialLib[i]){
-				filtFlag = 1;
-				break;
-			}
+		if(frequency = atof(alignFrequency.c_str())){
+			if(frequency <= FILT_CONTEXT_FREQUENCY){filtFlag = 1;}
 		}
-		//Judge is Align correct.
+		//-----------Evaluation candidate and record it----------
 		if(filtFlag == 1 && FILTER_SWITCH == true){
 			dropAlign++;
 			continue;
@@ -121,6 +109,8 @@ int main(int argc, char* argv[]){
 			}
 			for(loopCount = 0, partErrorFlag = -1; loopCount < wordLib[chWord].alignCount; loopCount++){//For each align lib
 				if(wordLib[chWord].enWord[loopCount] == alignWord){//Correct Align
+					if(alignWord.find(' ') != string::npos){phraseWord++;}
+					else{singleWord++;}
 					correctAlign++;
 					wordLib[chWord].enWord[loopCount] = "";
 					partErrorFlag = -2;
@@ -145,8 +135,8 @@ int main(int argc, char* argv[]){
 	fout << "==============================" << endl;
 	fout << "Total Chinese Align Word: " << alignCountChWord << " Pairs" << endl;
 	fout << "Used Chinese Align Count: " << usedAlign << " Pairs" << endl;
-	fout << "Total Align Word: " << totalAlign << " words" << endl;
-	fout << "Correct Align Word: " << correctAlign << " words" << endl;
+	fout << "Total Align Word: " << totalAlign << " words"  << endl;
+	fout << "Correct Align Word: " << correctAlign << " words(" << singleWord << "+" << phraseWord << ")"<< endl;
 	fout << "Part Error Align Word: " << partErrorAlign << " words" << endl;
 	fout << "Full Error Align Word: " << fullErrorAlign << " words" << endl;
 	fout << "Drop Error Align Word: " << dropAlign << " words" << endl;
