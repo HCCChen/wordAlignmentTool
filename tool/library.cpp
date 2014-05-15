@@ -71,6 +71,13 @@ string int2str(int &i) {
 	return ss.str();
 }
 
+string double2str(double &i){
+	string s;
+	stringstream ss(s);
+	ss << i;
+	return ss.str();
+}
+
 int str2int(string str){
 	return atoi(str.c_str());
 }
@@ -136,4 +143,14 @@ bool loadFile(string filename, map<string, int> &container){
 	}
 	fin.close();
 	return true;
+}
+
+double getMutualInformation(int totalNumber, int partA, int partB, int partAB){
+	double p_ab, p_a, p_b, mu;
+	p_ab = (double)partAB/(double)totalNumber;
+	p_a = (double)(partA+partAB)/(double)totalNumber;
+	p_b = (double)(partB+partAB)/(double)totalNumber;
+	mu = log(p_ab/(p_a*p_b));
+	//cout << mu << "=" << p_ab << "/" << p_a << "*" << p_b << endl;
+	return mu;
 }

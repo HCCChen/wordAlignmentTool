@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = library.o -O2 -std=c++0x
+CFLAGS = library.o -std=c++0x -pthread -lpthread -O2
 
 all: library
 	${CC} phraseMerge.cpp ${CFLAGS} -o phraseMerge.out

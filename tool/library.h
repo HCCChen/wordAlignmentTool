@@ -13,10 +13,13 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
-#include <regex.h>
+#include <math.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
+#include <thread>
+#include <mutex>
+#include <regex.h>
 
 using namespace std;
 
@@ -26,7 +29,9 @@ int getdir(string dir, vector<string> &files);
 int countFileLine(string filePath);
 //integer to string
 string int2str(int &i);
-//integer to string
+//double to string
+string double2str(double &i);
+//string to int
 int str2int(string str);
 //Divide Sentence base on flag character
 int explode(char divideChar, string originalString, vector<string> &stringAry);
@@ -41,3 +46,5 @@ string strToLower(string str);
 bool loadFile(string filename, vector<string> &container);
 //Load file to map<string, int> without any process
 bool loadFile(string filename, map<string, int> &container);
+//Get Mutual information
+double getMutualInformation(int totalNumber, int partA, int partB, int partAB);
