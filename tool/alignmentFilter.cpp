@@ -6,7 +6,7 @@
 #include "library.h"
 using namespace std;
 
-int getPairFrequency(string chWord, string enWord, vector<string> &chContext, vector<string> &enContext, int &fCh, int &fEn, int &totalLine);
+int getPairFrequency(string chWord, string enWord, vector<string> &chContext, vector<string> &enContext, int &fCh, int &fEn, int &totalLine, double &fc);
 bool generateCandidate(string chWord, string alignWord, string alignScore, map<string, string> &alignResult, vector<string> &chContext, vector<string> &enContext);
 bool testFun(int idx, map<string, string> &alignResult ,vector<string> &chContext, vector<string> &enContext);
 
@@ -73,13 +73,10 @@ int main(int argc, char* argv[]){
 			else if(alignResult.find(tmpStr) == alignResult.end()){
 				//Multi-thread for candidate
 			//	generateCandidate(chWord, alignWord, alignScore, alignResult, chContext, enContext);
-				//cout << threadFlag << " : " << tmpStr << endl;
 				t[threadFlag++] = std::thread(generateCandidate, chWord, alignWord, alignScore, std::ref(alignResult), std::ref(chContext), std::ref(enContext));
-				//t[threadFlag++] = std::thread(testFun, processCount, alignResult ,chContext, enContext);
 				if(threadFlag == MAX_THREAD){//Wait thread clear!
 					cout << processCount << " thread finish! " << endl;
 					for(j = 0; j < MAX_THREAD; j++){
-						//cout << j << endl;
 						t[j].join();
 					}
 					threadFlag = 0;
@@ -101,12 +98,17 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-
-int getPairFrequency(string chWord, string enWord, vector<string> &chContext, vector<string> &enContext, int &fCh, int &fEn, int &totalLine){
-	int i, pairFreq;
-	for(i = 0, pairFreq = 0, fCh = 0, fEn = 0, totalLine = chContext.size(); i < totalLine; i++){
-		if(chContext[i].find(chWord) != string::npos && enContext[i].find(enWord) != string::npos){
+int getPairFrequency(string chWord, string enWord, vector<string> &chContext, vector<string> &enContext, int &fCh, int &fEn, int &totalLine, double &fc){
+	int i,j,pairFreq;
+	double enWordCount = 0 ,enSegCount = 0;
+	for(j = 0; j < enWord.size(); j++){if(enWord[j] == ' '){enWordCount++;}}
+	for(i = 0, pairFreq = 0, fCh = 0, fEn = 0, fc = 0, totalLine = chContext.size(); i < totalLine; i++){
+		if(chContext[i].find(chWord) != string::npos && enContext[i].find(enWord) != string::npos){//Chinese and English appear at the same time
 			pairFreq++;
+			//get the number of english word seg
+			for(j = 0; j < enContext[i].size(); j++){if(enContext[i][j] == ' '){enSegCount++;}}
+			//Calculate "Fractional count"
+			fc += 1/(enSegCount-enWordCount);
 			continue;
 		}
 		if(chContext[i].find(chWord) != string::npos){fCh++;}
@@ -117,15 +119,39 @@ int getPairFrequency(string chWord, string enWord, vector<string> &chContext, ve
 
 bool generateCandidate(string chWord, string alignWord, string alignScore, map<string, string> &alignResult, vector<string> &chContext, vector<string> &enContext){
 	string tmpStr = chWord + "," + alignWord;
+	string alignFreq = "0", alignProbability = "0";
+	vector<string> scoreSeq;
 	int pairFrequency, chFreq, enFreq, totalLine;
 	double mu, cc, lr, dc, fc;
-	//Get relative information
-	pairFrequency = getPairFrequency(chWord, alignWord, chContext, enContext, chFreq, enFreq, totalLine);
-	if(pairFrequency < 1){return false;}
-	//calculate relative parameter
-	mu = getMutualInformation(totalLine, chFreq, enFreq, pairFrequency);
+	//if Pair is exist: update!!
+	if(alignResult.find(tmpStr) != alignResult.end()){
+		explode(',', alignResult[tmpStr], scoreSeq);
+		alignFreq = scoreSeq[0];
+		alignProbability = scoreSeq[1];
+		chFreq = atoi(scoreSeq[2].c_str());
+		enFreq = atoi(scoreSeq[3].c_str());
+		pairFrequency = atoi(scoreSeq[4].c_str());
+		totalLine = atoi(scoreSeq[5].c_str());
+		mu = atof(scoreSeq[6].c_str());
+		cc = atof(scoreSeq[7].c_str());
+		lr = atof(scoreSeq[8].c_str());
+		dc = atof(scoreSeq[9].c_str());
+		fc = atof(scoreSeq[10].c_str());
+	}
+	else{//New pair
+		if(alignScore.find(".") != string::npos){alignProbability = alignScore;}
+		else{alignFreq = alignScore;}
+		//Get relative information
+		pairFrequency = getPairFrequency(chWord, alignWord, chContext, enContext, chFreq, enFreq, totalLine, fc);
+		if(pairFrequency < 1){return false;}
+		//calculate relative parameter
+		mu = getMutualInformation(totalLine, chFreq, enFreq, pairFrequency);
+		cc = getCorrelationCoefficient(totalLine, chFreq, enFreq, pairFrequency);
+		lr = getLikehoodRatios(totalLine, chFreq, enFreq, pairFrequency);
+		dc = getDice(totalLine, chFreq, enFreq, pairFrequency);
+	}
 	//Merge and output
-	alignScore = int2str(chFreq) + "," + int2str(enFreq) + "," + int2str(pairFrequency) + "," + int2str(totalLine) + "," + double2str(mu);
+	alignScore = alignFreq + "," + alignProbability + "," + int2str(chFreq) + "," + int2str(enFreq) + "," + int2str(pairFrequency) + "," + int2str(totalLine) + "," + double2str(mu) + "," + double2str(cc) + "," + double2str(lr) + "," + double2str(dc) + "," + double2str(fc);
 	alignResult[tmpStr] = alignScore;
 
 	return true;

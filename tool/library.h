@@ -48,3 +48,11 @@ bool loadFile(string filename, vector<string> &container);
 bool loadFile(string filename, map<string, int> &container);
 //Get Mutual information
 double getMutualInformation(int totalNumber, int partA, int partB, int partAB);
+//Get Correlation coefficient
+double getCorrelationCoefficient(int totalNumber, int partA, int partB, int partAB);
+//Get Correlation coefficient
+double getLikehoodRatios(int totalNumber, int partA, int partB, int partAB);
+//Get L Value: L(k,n,x) = x^k(1-x)^(n-k)
+double getLValue(double k,double n,double x);
+//Get Dice Coefficient
+double getDice(int totalNumber, int partA, int partB, int partAB);

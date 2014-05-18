@@ -154,3 +154,54 @@ double getMutualInformation(int totalNumber, int partA, int partB, int partAB){
 	//cout << mu << "=" << p_ab << "/" << p_a << "*" << p_b << endl;
 	return mu;
 }
+
+double getCorrelationCoefficient(int totalNumber, int partA, int partB, int partAB){
+	double f11, f12, f21, f22, fc, fcp, fe, fep, cc;
+	f11 = partAB;
+	f12 = partB;
+	f21 = partA;
+	f22 = totalNumber - partA - partB - partAB;
+	fc = f11 + f21;
+	fcp = totalNumber - fc;
+	fe = f11 + f12;
+	fep = totalNumber - fe;
+	cc = pow((f11*f22)-(f12*f21), 2)/(fc*fcp*fe*fep);
+	//cout << mu << "=" << p_ab << "/" << p_a << "*" << p_b << endl;
+	return cc;
+}
+
+double getLValue(double k,double n,double x){
+	return pow(x,(int)k)*pow(1-x, (int)(n-k));
+}
+
+//Unfinish
+double getLikehoodRatios(int totalNumber, int partA, int partB, int partAB){
+	double f11, f12, f21, f22, fc, fcp, fe, fep, lr;//Fc, Fc* Fe, Fe*
+	double pe, pec, pec2;//p(e), p(e|c), p(e|c*)
+	f11 = partAB;
+	f12 = partB;
+	f21 = partA;
+	f22 = totalNumber - partA - partB - partAB;
+	fc = f11 + f21;
+	fcp = f12 + f22;
+	fe = f11 + f12;
+	fep = f21 + f22;
+	pe = fe/totalNumber;
+	pec = f11/fc;
+	pec2 = f12/fcp;
+
+	lr = log(getLValue(f11, fc, pec))+log(getLValue(f12, fcp, pec2))-log(getLValue(f11, fc, pe))-log(getLValue(f12, fcp, pe));
+	return lr;
+}
+
+double getDice(int totalNumber, int partA, int partB, int partAB){
+	double f11, f12, f21, f22, dc;
+	f11 = partAB;
+	f12 = partB;
+	f21 = partA;
+	f22 = totalNumber - partA - partB - partAB;
+
+	dc = 2*f11/(2*f11+f12+f21);
+	return dc;
+}
+

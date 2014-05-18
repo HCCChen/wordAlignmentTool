@@ -12,13 +12,15 @@ typedef struct ALIGNLIB{
 }alignLib;
 
 int main(int argc, char* argv[]){
-	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign";
+	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign20140518";
+	//const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
 	const double FILT_PROBABILITY = 0.1;
 	const int FILT_ALIGNMENT_FREQUENCY = 1;//More than ...
-	const int FILT_CONTEXT_FREQUENCY = 1;//More than ...
-	const bool FILTER_SWITCH = true;//true = do filter
+	const int FILT_CONTEXT_FREQUENCY = 0;//More than ...
+	const double FILT_DICE_VALUE = 0.2;//More than ...
+	const bool FILTER_SWITCH = false;//true = do filter
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
 
@@ -34,10 +36,11 @@ int main(int argc, char* argv[]){
 	vector<string> candidateSeg;
 	fstream fin, fout, ferr1, ferr2;
 	char buf[4096];
-	string tmpStr, chWord, alignWord, alignProbability, alignFrequency;
-	int pos1, pos2, pos3,loopCount, partErrorFlag, i, filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0;
+	string tmpStr, chWord, alignWord;
+	int loopCount, partErrorFlag, i, filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0;
 	int correctAlign = 0, partErrorAlign = 0, fullErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0, usedAlign = 0;
-	double probability, frequency;
+	double gizaFreq, gizaProbability, pairFreq, diceValue;
+	double precisionRate, recallRate;
 	//load align lib
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
@@ -80,18 +83,19 @@ int main(int argc, char* argv[]){
 		explode(',', tmpStr, candidateSeg);
 		chWord = candidateSeg[0];
 		alignWord = candidateSeg[1];
-		alignProbability = candidateSeg[2];
-		alignFrequency = candidateSeg[3];
+		gizaFreq = atof(candidateSeg[2].c_str());
+		gizaProbability = atof(candidateSeg[3].c_str());
+		pairFreq = atof(candidateSeg[6].c_str());
+		diceValue = atof(candidateSeg[11].c_str());
 		//-------------------Filter--------------------
-		if(alignProbability.find("e") != string::npos){
+		if(candidateSeg[3].find("e") != string::npos){
 			filtFlag = 1;
 		}
-		else if(probability = atof(alignProbability.c_str())){
-			if(probability < FILT_PROBABILITY){filtFlag = 1;}
-			else if(probability >= 1 && probability <= FILT_ALIGNMENT_FREQUENCY){filtFlag = 1;}
-		}
-		if(frequency = atof(alignFrequency.c_str())){
-			if(frequency <= FILT_CONTEXT_FREQUENCY){filtFlag = 1;}
+		else if((gizaFreq > 0 && gizaFreq < FILT_ALIGNMENT_FREQUENCY)
+			|| (gizaProbability > 0 && gizaProbability < FILT_PROBABILITY)
+			|| (pairFreq > 0 && pairFreq < FILT_CONTEXT_FREQUENCY)
+			|| (diceValue > 0 && diceValue < FILT_DICE_VALUE)){
+			filtFlag = 1;
 		}
 		//-----------Evaluation candidate and record it----------
 		if(filtFlag == 1 && FILTER_SWITCH == true){
@@ -132,7 +136,10 @@ int main(int argc, char* argv[]){
 	}
 	//Output evalute result
 	fullErrorAlign = totalAlign - correctAlign - missAlign - partErrorAlign - dropAlign;
+	precisionRate = (double)correctAlign*100/(double)(totalAlign - missAlign - dropAlign);
+	recallRate = (double)correctAlign*100/(double)(alignLibCount);
 	fout << "==============================" << endl;
+	fout << "Known Library count: " << alignLibCount << " Pairs" << endl;
 	fout << "Total Chinese Align Word: " << alignCountChWord << " Pairs" << endl;
 	fout << "Used Chinese Align Count: " << usedAlign << " Pairs" << endl;
 	fout << "Total Align Word: " << totalAlign << " words"  << endl;
@@ -141,8 +148,10 @@ int main(int argc, char* argv[]){
 	fout << "Full Error Align Word: " << fullErrorAlign << " words" << endl;
 	fout << "Drop Error Align Word: " << dropAlign << " words" << endl;
 	fout << "Miss Align Word: " << missAlign << " words" << endl;
-	fout << "Alignment Precision Rate(correctAlign/Not Miss Align): " << (double)correctAlign*100/(double)(totalAlign - missAlign - dropAlign) << "%" << endl;
-	fout << "Alignment Recall Rate(correctAlign/have be find align): " << (double)correctAlign*100/(double)(usedAlign) << "%" << endl;
+	fout << "Alignment Precision Rate(correctAlign/Not Miss Align): " << precisionRate << "%" << endl;
+	fout << "Alignment Recall Rate(correctAlign/Align in library): " << recallRate << "%" << endl;
+	fout << "Alignment Recall Rate(correctAlign/Align be used in library): " << (double)correctAlign*100/(double)(usedAlign) << "%" << endl;
+	fout << "f-measure: " << (2*precisionRate*recallRate)/(precisionRate + recallRate) << "%" << endl;
 	fin.close();
 	fout.close();
 	
