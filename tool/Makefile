@@ -13,6 +13,7 @@ all: library
 	${CC} removeKnownAlign.cpp ${CFLAGS} -o removeKnownAlign.out
 	${CC} revertEnglishWord.cpp ${CFLAGS} -o revertEnglishWord.out
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
+	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
 library: library.cpp
 	${CC} library.h library.cpp -O2 -std=c++0x -c
 phraseMerge: phraseMerge.cpp
@@ -37,5 +38,7 @@ revertEnglishWord: revertEnglishWord.cpp
 	${CC} revertEnglishWord.cpp ${CFLAGS} -o revertEnglishWord.out
 filtKnownAlignLib: filtKnownAlignLib.cpp
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
+getAlignPair: getAlignPair.cpp 
+	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
 clear:
 	rm *.out

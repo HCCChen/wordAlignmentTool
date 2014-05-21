@@ -36,6 +36,8 @@ int str2int(string str);
 //Divide Sentence base on flag character
 int explode(char divideChar, string originalString, vector<string> &stringAry);
 int explode(string divideStr, string originalString, vector<string> &stringAry);
+//Remove whitespace in the head/tail
+string trim(const string& str);
 //Replace all sub_string
 string strReplaceAll(string sources, string originStr, string targetStr);
 //Merge word sequence by particular word

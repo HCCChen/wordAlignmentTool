@@ -38,7 +38,7 @@ int explode(char divideChar, string originalString, vector<string> &stringAry){
 	stringAry.clear();
 	while(flag = originalString.find(divideChar, flag)){
 		tmpStr = originalString.substr(preFlag, flag-preFlag);
-		stringAry.push_back(tmpStr);
+		stringAry.push_back(trim(tmpStr));
 		index++;
 		if(flag > length || flag < 0){return index;}
 		flag++;
@@ -54,13 +54,28 @@ int explode(string divideStr, string originalString, vector<string> &stringAry){
 	stringAry.clear();
 	while(flag = originalString.find(divideStr, flag)){
 		tmpStr = originalString.substr(preFlag, flag-preFlag);
-		stringAry.push_back(tmpStr);
+		stringAry.push_back(trim(tmpStr));
 		index++;
 		if(flag > length || flag < 0){return index;}
 		flag += divideStr.length();
 		preFlag = flag;
 	}
 	return -1;
+}
+
+string trim(const string& str)
+{
+    string::size_type pos = str.find_first_not_of(' ');
+    if (pos == string::npos)
+    {
+        return str;
+    }
+    string::size_type pos2 = str.find_last_not_of(' ');
+    if (pos2 != string::npos)
+    {
+        return str.substr(pos, pos2 - pos + 1);
+    }
+    return str.substr(pos);
 }
 
 
