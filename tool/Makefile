@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = library.o -std=c++0x -pthread -lpthread -O2
+CFLAGS = library.o -std=c++11 -pthread -I./inlcude -L./lib -lboost_thread -O2
 
 all: library
 	${CC} phraseMerge.cpp ${CFLAGS} -o phraseMerge.out
@@ -15,7 +15,7 @@ all: library
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
 	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
 library: library.cpp
-	${CC} library.h library.cpp -O2 -std=c++0x -c
+	${CC} library.h library.cpp -O2 -std=c++11 -c
 phraseMerge: phraseMerge.cpp
 	${CC} phraseMerge.cpp ${CFLAGS} -o phraseMerge.out
 evaluation: evaluation.cpp

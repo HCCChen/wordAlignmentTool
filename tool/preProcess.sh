@@ -1,5 +1,7 @@
 #!/bin/bash
 
+$switchRevert = "true"
+
 cd ../data
 rm chBase* enBase*
 cd ../tool
@@ -18,6 +20,9 @@ printf "\E[1;34;40m\tRemove known align! \E[0m\n"
 #chBaseTmp -> chBaseTmp2
 #enBase -> enBaseTmp
 ./removeKnownAlign.out
+
+#----------------------------------------------------------------------------
+if [ "$switchRevert" == "true" ]; then
 #chBaseTmp2 -> chBaseTmp
 #enBaseTmp -> enBase
 cd ../data
@@ -48,6 +53,9 @@ cd ../data
 mv chBaseTmp2 chBaseTmp
 cd ../tool
 
+fi
+#----------------------------------------------------------------------------
+
 printf "\E[1;34;40m\tOther pre-process and move them to 'giza++' dictionary! \E[0m\n"
 #chBaseTmp2 -> chBaseTrain
 #enBaseTmp -> enBaseTrain
@@ -56,3 +64,6 @@ printf "\E[1;34;40m\tOther pre-process and move them to 'giza++' dictionary! \E[
 cd ../data
 cp chBaseTrain enBaseTrain ../giza++/
 cd ../tool
+
+printf "\E[1;34;40m\tGenerate word pair by n-gram \E[0m\n"
+./getAlignPair.out
