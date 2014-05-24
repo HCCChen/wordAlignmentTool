@@ -4,12 +4,13 @@
 	Target: 
 		1. Get bilingual pair candidate for bilingual corpus
 		2. Calculate statistic information
+		3. The source of Chinese word: known lib
 */
 #include "library.h"
 using namespace std;
 
 //Get n-gram and basic filter
-bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib);
+bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib, map<string, int> &enWordInfo);
 //Divide sentence by ',' ';' '.'
 bool divideSentenceByAnchor(vector<string> &sentenceSeg, vector<vector<string>> &subSentence);
 //For english filter
@@ -18,60 +19,62 @@ bool filtPhrase(string phrase);
 bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair, map<string, int> &specialLib);
 
 int main(int argc, char* argv[]){
-	const bool REMOVE_SHORT_CHWORD = false;
-	const int MAX_GRAM = 4;
-	const string CH_CONTEXT_PATH = "../data/chBaseTrain";
+	const int MAX_GRAM = 3;
+	const string CH_CONTEXT_PATH = "../data/chBase";
 	const string EN_CONTEXT_PATH = "../data/enBaseTmp";
+	const string CH_KNOWNWORD_LIB = "../data/knownChWord";
 	const string CH_SPECIAL_LIB_PATH = "../data/languageBase/specialWordLib";
 	const string EN_SPECIAL_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	const string OUTPUT_PATH = "../data/ngramPairResult";
+	const int FILTER_OF_FREQUENCY = 2;//最少須出現次數
 	char buf[4096];
 	vector<string> chSentecneSeg;
 	vector<string> enSentecneSeg;
+	vector<string> knownChWord;
 	vector<string> nGram;
 	map<string, int> specialLibCh;
 	map<string, int> specialLib;
 	map<string, int> wordPair;
+	map<string, int> chWordInfo;//Record chWord and Frequency
+	map<string, int> enWordInfo;//Record enWord and frequency
 	map<string, int>::iterator iter;
-	int i,j;
-	string tmpStr, chLaw, enLaw;
+	int i,j, chFreq, enFreq, pairFreq, totalNumber = 0;
+	double mu = 0, cc = 0, lr = 0, dc = 0, fc = 0;
+	string tmpStr, chLaw, enLaw, chWord, enWord;
 	fstream fin, fin2, fout;
 
-	fin.open(CH_SPECIAL_LIB_PATH.c_str(), ios::in);
-	while(!fin.eof()){
-		fin.getline(buf, 4096);
-		tmpStr.assign(buf);
-		specialLibCh[tmpStr] = 1;
-	}
-	fin.close();
-	fin.open(EN_SPECIAL_LIB_PATH.c_str(), ios::in);
-	while(!fin.eof()){
-		fin.getline(buf, 4096);
-		tmpStr.assign(buf);
-		specialLib[tmpStr] = 1;
-	}
-	fin.close();
-	
+	//Load Basic Information
+	loadFile(CH_SPECIAL_LIB_PATH, specialLibCh);
+	loadFile(EN_SPECIAL_LIB_PATH, specialLib);
+	loadFile(CH_KNOWNWORD_LIB, knownChWord);
+
 	fin.open(CH_CONTEXT_PATH.c_str(), ios::in);
 	fin2.open(EN_CONTEXT_PATH.c_str(), ios::in);
 	cout << "\E[1;32;40mGenerating word pair by n-gram, please wait a minute...\E[0m" << endl;
-	while(!fin.eof()){
+	while(!fin.eof()){//For each sentence pair
 		fin.getline(buf, 4096);
 		chLaw.assign(buf);
 		fin2.getline(buf, 4096);
 		enLaw.assign(buf);
 		if(chLaw.length() < 1 || enLaw.length() < 1){continue;}
 		//Divide Chinese word
-		explode(' ', chLaw, chSentecneSeg);
-		for(i = 0; i < chSentecneSeg.size(), REMOVE_SHORT_CHWORD == true; i++){//Remove too short chinese
-			if(chSentecneSeg[i].length() < 6){
-				chSentecneSeg.erase(chSentecneSeg.begin()+i);
-				i--;
+		totalNumber++;
+		chSentecneSeg.clear();
+		for(i = 0; i < knownChWord.size(); i++){//for each known chWord
+			if(chLaw.find(knownChWord[i]) != string::npos){//For each chword which appear in this sentence
+				chSentecneSeg.push_back(knownChWord[i]);
+				if(chWordInfo.find(knownChWord[i]) == chWordInfo.end()){
+					chWordInfo[knownChWord[i]] = 1;
+				}
+				else{
+					chWordInfo[knownChWord[i]]++;
+				}
 			}
 		}
+		if(chSentecneSeg.size() == 0){continue;}
 		//Get n-gram of english word
 		explode(' ', enLaw, enSentecneSeg);
-		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib);
+		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);
 		generateWordPair(chSentecneSeg, nGram, wordPair, specialLibCh);
 	}
 	fin.close();
@@ -81,14 +84,20 @@ int main(int argc, char* argv[]){
 	cout << "\E[1;32;40mOutput word pair...\E[0m" << endl;
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	for(iter = wordPair.begin();iter != wordPair.end(); iter++){
-		if(iter->second < 2){continue;}
-		fout << iter->first << "," << iter->second << endl;
+		if(iter->second < FILTER_OF_FREQUENCY){continue;}
+		tmpStr = iter->first;
+		chWord = tmpStr.substr(0, tmpStr.find(","));
+		enWord = tmpStr.substr(tmpStr.find(",")+1);
+		pairFreq = iter->second;
+		chFreq = chWordInfo[chWord] - pairFreq;
+		enFreq = enWordInfo[enWord] - pairFreq;
+		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << endl;
 	}
 	fout.close();
 	return 0;
 }
 
-bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib){
+bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib, map<string, int> &enWordInfo){
 	int i, j,gramSize, subIdx;
 	string tmpStr;
 	vector<vector<string>> atomSentence;
@@ -106,6 +115,13 @@ bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGr
 				if(filtPhrase(tmpStr) == false){continue;}
 				//Insert to library
 				nGram.push_back(tmpStr);
+				//Record Information
+				if(enWordInfo.find(tmpStr) == enWordInfo.end()){
+					enWordInfo[tmpStr] = 1;
+				}
+				else{
+					enWordInfo[tmpStr]++;
+				}
 			}
 		}
 	}
@@ -147,7 +163,8 @@ bool filtPhrase(string phrase){
 		return false;
 	}
 
-	t = wordSeg.size()-1;	
+	t = wordSeg.size()-1;
+/*
 	if(wordSeg[0] == "of" || wordSeg[0] == "off" || wordSeg[0] == "and"
 	|| wordSeg[0] == "or" || wordSeg[0] == "but" || wordSeg[0] == "nor"
 	|| wordSeg[0] == "i" || wordSeg[0] == "he" || wordSeg[0] == "she"
@@ -170,6 +187,7 @@ bool filtPhrase(string phrase){
 	|| wordSeg[t] == "an" || wordSeg[t] == "a" || wordSeg[t] == "be"){
 		return false;
 	}
+*/
 	return true;
 }
 
