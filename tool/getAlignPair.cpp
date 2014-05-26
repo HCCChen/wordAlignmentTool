@@ -19,14 +19,16 @@ bool filtPhrase(string phrase);
 bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair, map<string, int> &specialLib);
 
 int main(int argc, char* argv[]){
-	const int MAX_GRAM = 3;
+	const int MAX_GRAM = 4;
 	const string CH_CONTEXT_PATH = "../data/chBase";
 	const string EN_CONTEXT_PATH = "../data/enBaseTmp";
+//	const string CH_CONTEXT_PATH = "../data/chTest";
+//	const string EN_CONTEXT_PATH = "../data/enTest";
 	const string CH_KNOWNWORD_LIB = "../data/knownChWord";
 	const string CH_SPECIAL_LIB_PATH = "../data/languageBase/specialWordLib";
 	const string EN_SPECIAL_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	const string OUTPUT_PATH = "../data/ngramPairResult";
-	const int FILTER_OF_FREQUENCY = 2;//最少須出現次數
+	const int FILTER_OF_FREQUENCY = 1;//最少須出現次數
 	char buf[4096];
 	vector<string> chSentecneSeg;
 	vector<string> enSentecneSeg;
@@ -89,9 +91,16 @@ int main(int argc, char* argv[]){
 		chWord = tmpStr.substr(0, tmpStr.find(","));
 		enWord = tmpStr.substr(tmpStr.find(",")+1);
 		pairFreq = iter->second;
-		chFreq = chWordInfo[chWord] - pairFreq;
-		enFreq = enWordInfo[enWord] - pairFreq;
-		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << endl;
+		chFreq = chWordInfo[chWord]-pairFreq;
+		enFreq = enWordInfo[enWord]-pairFreq;
+		mu = getMutualInformation(totalNumber, chFreq, enFreq, pairFreq);
+		cc = getCorrelationCoefficient(totalNumber, chFreq, enFreq, pairFreq);
+		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
+		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
+
+		//Basic Filter	
+		if(mu < 0 || lr < 0 || cc < 0 || dc < 0){continue;}
+		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << ",0" << endl;
 	}
 	fout.close();
 	return 0;
@@ -115,15 +124,17 @@ bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGr
 				if(filtPhrase(tmpStr) == false){continue;}
 				//Insert to library
 				nGram.push_back(tmpStr);
-				//Record Information
-				if(enWordInfo.find(tmpStr) == enWordInfo.end()){
-					enWordInfo[tmpStr] = 1;
-				}
-				else{
-					enWordInfo[tmpStr]++;
-				}
 			}
 		}
+	}
+	//Remove Repeat item
+	sort(nGram.begin(), nGram.end());
+	nGram.erase( unique( nGram.begin(), nGram.end() ), nGram.end());
+	//Record Information
+	for(i = 0; i < nGram.size(); i++){
+		tmpStr = nGram[i];
+		if(enWordInfo.find(tmpStr) == enWordInfo.end()){enWordInfo[tmpStr] = 1;}
+		else{enWordInfo[tmpStr]++;}
 	}
 	return true;
 }
@@ -164,18 +175,15 @@ bool filtPhrase(string phrase){
 	}
 
 	t = wordSeg.size()-1;
-/*
 	if(wordSeg[0] == "of" || wordSeg[0] == "off" || wordSeg[0] == "and"
 	|| wordSeg[0] == "or" || wordSeg[0] == "but" || wordSeg[0] == "nor"
 	|| wordSeg[0] == "i" || wordSeg[0] == "he" || wordSeg[0] == "she"
 	|| wordSeg[0] == "his" || wordSeg[0] == "her" || wordSeg[0] == "him"
 	|| wordSeg[0] == "we" || wordSeg[0] == "they" || wordSeg[0] == "them"
-	|| wordSeg[0] == "be" || wordSeg[0] == "been" || wordSeg[0] == "am"
-	|| wordSeg[0] == "are" || wordSeg[0] == "is" || wordSeg[0] == "was"
-	|| wordSeg[0] == "were" || wordSeg[t] == "no" || wordSeg[t] == "not" || wordSeg[t] == "have"
-    || wordSeg[t] == "has" || wordSeg[t] == "may" || wordSeg[t] == "when"
-    || wordSeg[t] == "what" || wordSeg[t] == "where" || wordSeg[t] == "why"
-    || wordSeg[t] == "who" || wordSeg[t] == "how"){
+	|| wordSeg[0] == "were" || wordSeg[0] == "no" || wordSeg[0] == "not" || wordSeg[0] == "have"
+    || wordSeg[0] == "has" || wordSeg[0] == "may" || wordSeg[0] == "when"
+    || wordSeg[0] == "what" || wordSeg[0] == "where" || wordSeg[0] == "why"
+    || wordSeg[0] == "who" || wordSeg[0] == "how"){
 		return false;
 	}
 	if(wordSeg[t] == "and" || wordSeg[t] == "or" || wordSeg[t] == "but"
@@ -187,7 +195,6 @@ bool filtPhrase(string phrase){
 	|| wordSeg[t] == "an" || wordSeg[t] == "a" || wordSeg[t] == "be"){
 		return false;
 	}
-*/
 	return true;
 }
 
