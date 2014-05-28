@@ -16,7 +16,7 @@ bool divideSentenceByAnchor(vector<string> &sentenceSeg, vector<vector<string>> 
 //For english filter
 bool filtPhrase(string phrase);
 //Pair chinese and english word and record it
-bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair, map<string, int> &specialLib);
+bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair, map<string, double> &wordPairWithFC, map<string, int> &specialLib);
 
 int main(int argc, char* argv[]){
 	const int MAX_GRAM = 4;
@@ -37,6 +37,7 @@ int main(int argc, char* argv[]){
 	map<string, int> specialLibCh;
 	map<string, int> specialLib;
 	map<string, int> wordPair;
+	map<string, double> wordPairWithFC;
 	map<string, int> chWordInfo;//Record chWord and Frequency
 	map<string, int> enWordInfo;//Record enWord and frequency
 	map<string, int>::iterator iter;
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]){
 		//Get n-gram of english word
 		explode(' ', enLaw, enSentecneSeg);
 		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);
-		generateWordPair(chSentecneSeg, nGram, wordPair, specialLibCh);
+		generateWordPair(chSentecneSeg, nGram, wordPair,wordPairWithFC ,specialLibCh);
 	}
 	fin.close();
 	fin2.close();
@@ -97,10 +98,11 @@ int main(int argc, char* argv[]){
 		cc = getCorrelationCoefficient(totalNumber, chFreq, enFreq, pairFreq);
 		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
 		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
+		fc = wordPairWithFC[tmpStr];
 
 		//Basic Filter	
 		if(mu < 0 || lr < 0 || cc < 0 || dc < 0){continue;}
-		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << ",0" << endl;
+		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << "," << fc << endl;
 	}
 	fout.close();
 	return 0;
@@ -198,7 +200,7 @@ bool filtPhrase(string phrase){
 	return true;
 }
 
-bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair, map<string, int> &specialLib){
+bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair,map<string, double> &wordPairWithFC ,map<string, int> &specialLib){
 	int i,j;
 	string tmpStr;
 	int reti;
@@ -217,9 +219,11 @@ bool generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<st
 			tmpStr = chSentecneSeg[i] + "," + nGram[j];
 			if(wordPair.find(tmpStr) == wordPair.end()){
 				wordPair[tmpStr] = 1;
+				wordPairWithFC[tmpStr] = 1/(double)(nGram.size());
 			}
 			else{
 				wordPair[tmpStr]++;
+				wordPairWithFC[tmpStr] += 1/(double)(nGram.size());
 			}
 		}
 	}
