@@ -27,7 +27,8 @@ int countSubstrFreq(string sources, string substr);
 
 int main(int argc, char* argv[]){
 	const string DIR_PATH = "../data/";
-	const string DIR_NAME = "BiLawSentenceSubSet/";
+	const string DIR_NAME = "BiLawSentenceCandidate/";
+	int numberOfErrorFile = 0;
 	vector<string> files = vector<string>();
 	getdir(DIR_PATH + DIR_NAME, files);
 	foutCh.open("../data/chBase", ios::out);
@@ -35,9 +36,11 @@ int main(int argc, char* argv[]){
     //輸出資料夾和檔案名稱於螢幕
     for(int i=0; i<files.size(); i++){
 		if(divideLaw(DIR_PATH + DIR_NAME + files[i]) == false){
+			numberOfErrorFile++;
 			cout << files[i] << " has error, ignore!!" << endl;
 		}
     }
+	cout << endl << "Use " << (files.size()-numberOfErrorFile) << " laws" << endl;
 	return 0;
 }
 
@@ -86,7 +89,7 @@ bool divideLaw(string filePath){
 			break;
 			case 1://判斷是否為合法配對
 				pairFlag = 0;
-				enBuf = lawSentence;
+				enBuf = strToLower(lawSentence);
 
 				if((chBuf.find('[') < 2 || chBuf.length() < 4) && (enBuf.find('[') < 2 || enBuf.length() < 4)){//End Of File
 					break;
