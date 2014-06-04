@@ -7,9 +7,9 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
-	const string KNOWN_ALIGN_PATH = "../../data/knownWordAlign";
-	const string CH_LAW_PATH = "../../data/chBaseTrain";
-	const string EN_LAW_PATH = "../../data/enBaseTrain";
+	const string KNOWN_ALIGN_PATH = "../../data/knownWordAlign20140522";
+	const string CH_LAW_PATH = "../../data/chBase";
+	const string EN_LAW_PATH = "../../data/enBase";
 	char buf[4096];
 	int pos1, pos2, i, matchCount = 0;
 	string tmpStr, chLaw, enLaw;
@@ -23,8 +23,8 @@ int main(int argc, char* argv[]){
 		fin.getline(buf, 4096);
 		tmpStr.assign(buf);
 		pos1 = tmpStr.find(",");
-		chLib.push_back(tmpStr.substr(0, pos1));
-		enLib.push_back(tmpStr.substr(pos1 + 1));
+		chLib.push_back(trim(tmpStr.substr(0, pos1)));
+		enLib.push_back(trim(tmpStr.substr(pos1 + 1)));
 	}
 	fin.close();
 	libFlag = new int[chLib.size()];
@@ -47,7 +47,12 @@ int main(int argc, char* argv[]){
 	}
 	fin.close();
 	fin2.close();
-	cout << matchCount << endl;
+	for(i = 0; i < chLib.size(); i++){
+		if(libFlag[i] == 1){
+			cout << chLib[i] << "," << enLib[i] << endl;
+		}
+	}
 
+	cout << matchCount << "/" << chLib.size() << endl;
 	return 0;
 }
