@@ -9,6 +9,8 @@
 #include "library.h"
 using namespace std;
 
+//For each chWord, create align word and relative information
+bool extractGramPair(string chWord, vector<string> &chLawList, vector<string> &enLawList, vector<vector<string>> &nGramList, map<string, int> &enWordInfo ,map<string, int> &specialLibCh, map<string, int> &specialLibEn ,int gramLength, int emInteration, vector<string> &resultPool);
 //Get n-gram and basic filter
 bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib, map<string, int> &enWordInfo);
 //Divide sentence by ',' ';' '.'
@@ -20,12 +22,12 @@ int generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<str
 //Generate EM Value
 bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWithFC, map<string, map<string, double>> &wordP_C_EByChWord, const int iteration);
 
+const int FILTER_OF_FREQUENCY = 1;//最少須出現次數
+const double ALIGNMENT_PROBABILITY = 0;//對齊機率門檻
 
 int main(int argc, char* argv[]){
-	const int FILTER_OF_FREQUENCY = 1;//最少須出現次數
-	const int ITERATION_NUMBER = 0;
+	const int ITERATION_NUMBER = 4;
 	const int MAX_GRAM = 4;
-	const double ALIGNMENT_PROBABILITY = 0;
 	const string CH_CONTEXT_PATH = "../data/chBase";
 	const string EN_CONTEXT_PATH = "../data/enBaseTmp";
 //	const string CH_CONTEXT_PATH = "../data/chTest";
@@ -35,10 +37,15 @@ int main(int argc, char* argv[]){
 	const string EN_SPECIAL_LIB_PATH = "../data/languageBase/specialWordLibEn";
 	const string OUTPUT_PATH = "../data/ngramPairResult";
 	char buf[4096];
+	vector<vector<string>> enLawSegList;
+	vector<vector<string>> nGramList;
+	vector<string> chLawList;
+	vector<string> enLawList;
 	vector<string> chSentecneSeg;
 	vector<string> enSentecneSeg;
 	vector<string> knownChWord;
 	vector<string> nGram;
+	vector<string> resultPool;
 	map<string, int> specialLibCh;
 	map<string, int> specialLib;
 	map<string, int> wordPair;
@@ -49,18 +56,35 @@ int main(int argc, char* argv[]){
 	map<string, int>::iterator iter;
 	map<string, map<string, double>> wordP_C_EByChWord;
 	int i,j, chFreq, enFreq, pairFreq, totalNumber = 0, totalPair = 0;
-	double mu = 0, cc = 0, lr = 0, dc = 0, fc = 0;
+	double mu = 0, cc = 0, lr = 0, dc = 0, fc = 0, alignProbability = 0;
 	string tmpStr, chLaw, enLaw, chWord, enWord;
 	fstream fin, fin2, fout;
 
 	//Load Basic Information
+	cerr << "\E[1;32;40mInitialize...\E[0m" << endl;
 	loadFile(CH_SPECIAL_LIB_PATH, specialLibCh);
 	loadFile(EN_SPECIAL_LIB_PATH, specialLib);
 	loadFile(CH_KNOWNWORD_LIB, knownChWord);
-
+	loadFile(CH_CONTEXT_PATH, chLawList);
+	loadFile(EN_CONTEXT_PATH, enLawList);
+	fout.open(OUTPUT_PATH.c_str(), ios::out);
+	fout.close();
+	for(i = 0;i < enLawList.size(); i++){
+		explode(' ', enLawList[i], enSentecneSeg);
+		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);
+		nGramList.push_back(nGram);
+	}
+	cerr << "\E[1;32;40mGenerating word pair by n-gram, please wait a minute...\E[0m" << endl;
+	for(i = 0;i < knownChWord.size(); i++){//For each chWord
+		if(extractGramPair(knownChWord[i], chLawList, enLawList, nGramList,enWordInfo,  specialLibCh, specialLib ,MAX_GRAM, ITERATION_NUMBER, resultPool) == true){cerr << i << " : " << knownChWord[i] << " done!" << endl;}
+		else{cerr << i << " : " << knownChWord[i] << " drop!" << endl;}
+	}
+	return 0;
+	//==============================================
+/*
 	fin.open(CH_CONTEXT_PATH.c_str(), ios::in);
 	fin2.open(EN_CONTEXT_PATH.c_str(), ios::in);
-	cout << "\E[1;32;40mGenerating word pair by n-gram, please wait a minute...\E[0m" << endl;
+	cerr << "\E[1;32;40mGenerating word pair by n-gram, please wait a minute...\E[0m" << endl;
 	while(!fin.eof()){//For each sentence pair
 		fin.getline(buf, 4096);
 		chLaw.assign(buf);
@@ -86,23 +110,24 @@ int main(int argc, char* argv[]){
 		explode(' ', enLaw, enSentecneSeg);
 		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);
 		totalPair += generateWordPair(chSentecneSeg, nGram, wordPair,wordPairWithFC ,specialLibCh);
-		cout << totalNumber << " : " << wordPairWithFC.size() << " pairs, total have " << enWordInfo.size() << " english words" << endl;
+		cerr << totalNumber << " : " << wordPairWithFC.size() << " pairs, total have " << enWordInfo.size() << " english words" << endl;
 	}
 	fin.close();
 	fin2.close();
-	cout << "\E[1;32;40mHave Generate " << totalPair << " pairs from " << totalNumber << " lines\E[0m" << endl;
+	cerr << "\E[1;32;40mHave Generate " << totalPair << " pairs from " << totalNumber << " lines\E[0m" << endl;
 
-	cout << "\E[1;32;40mGenerate EM value by Expectation-maximization algorithm \E[0m" << endl;
+	cerr << "\E[1;32;40mGenerate EM value by Expectation-maximization algorithm \E[0m" << endl;
 	generateEMValue(wordPair , wordPairWithFC, wordP_C_EByChWord, ITERATION_NUMBER);
 	//Output
-	cout << "\E[1;32;40mOutput word pair,total have " << wordPair.size() << " pairs\E[0m" << endl;
+	cerr << "\E[1;32;40mOutput word pair,total have " << wordPair.size() << " pairs\E[0m" << endl;
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
-	for(i = 0, iter = wordPair.begin();iter != wordPair.end(); iter++, i++){
+	for(i = 0, iter = wordPair.begin();iter != wordPair.end(); iter++){
 		if(iter->second < FILTER_OF_FREQUENCY){continue;}
 		tmpStr = iter->first;
 		chWord = tmpStr.substr(0, tmpStr.find(","));
 		enWord = tmpStr.substr(tmpStr.find(",")+1);
 		pairFreq = iter->second;
+//		alignProbability = wordP_C_EByChWord[chWord][enWord];
 		chFreq = chWordInfo[chWord]-pairFreq;
 		enFreq = enWordInfo[enWord]-pairFreq;
 		mu = getMutualInformation(totalNumber, chFreq, enFreq, pairFreq);
@@ -110,22 +135,73 @@ int main(int argc, char* argv[]){
 		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
 		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
 		fc = wordPairWithFC[tmpStr];
+		//Basic Filter	
+		if(mu < 0 || lr < 0 || cc < 0 || dc < 0 || pairFreq < FILTER_OF_FREQUENCY){continue;}
+		if(alignProbability < ALIGNMENT_PROBABILITY){continue;}
+		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << "," << fc << "," << alignProbability << endl;
+		i++;
+	}
+	fout.close();
+*/
+	return 0;
+}
 
+
+bool extractGramPair(string chWord, vector<string> &chLawList, vector<string> &enLawList, vector<vector<string>> &nGramList, map<string, int> &enWordInfo ,map<string, int> &specialLibCh, map<string, int> &specialLibEn ,int gramLength, int emInteration, vector<string> &resultPool){//For each ChWord
+	fstream fout;
+	int i,j, chFreq, enFreq, pairFreq, totalNumber = 0, totalPair = 0;
+	string tmpStr, enWord, resultLine = "";
+	vector<string> enSentecneSeg;
+	vector<string> chSentecneSeg;
+	chSentecneSeg.push_back(chWord);
+	vector<string> nGram;
+	map<string, int> wordPair;
+	map<string, int>::iterator iter;
+	map<string, double> wordPairWithFC;
+	map<string, map<string, double>> wordP_C_EByChWord;
+	double mu = 0, cc = 0, lr = 0, dc = 0, fc = 0, alignProbability = 0;
+	for(i = 0, chFreq = 0; i < chLawList.size(); i++){
+		if(chLawList[i].find(chWord) != string::npos){//For each chLaw which chWord appear!
+			nGram = nGramList[i];
+			chFreq++;
+			generateWordPair(chSentecneSeg, nGram, wordPair,wordPairWithFC ,specialLibCh);
+		}
+	}
+	if(wordPair.size() == 0){return false;}
+	//generateEMValue(wordPair , wordPairWithFC, wordP_C_EByChWord, emInteration);
+	//Output information
+	cerr << "\t" << wordPair.size() << endl;
+	for(iter = wordPair.begin();iter != wordPair.end(); iter++){
+		if(iter->second < FILTER_OF_FREQUENCY){continue;}
+		tmpStr = iter->first;
+		chWord = tmpStr.substr(0, tmpStr.find(","));
+		enWord = tmpStr.substr(tmpStr.find(",")+1);
+		totalNumber = chLawList.size();
+		pairFreq = iter->second;
+		enFreq = enWordInfo[enWord]-pairFreq;
+		mu = getMutualInformation(totalNumber, chFreq, enFreq, pairFreq);
+		cc = getCorrelationCoefficient(totalNumber, chFreq, enFreq, pairFreq);
+		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
+		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
+		fc = wordPairWithFC[tmpStr];
+		alignProbability = wordP_C_EByChWord[chWord][enWord];
 		//Basic Filter	
 		if(mu < 0 || lr < 0 || cc < 0 || dc < 0 || pairFreq < FILTER_OF_FREQUENCY){continue;}
 		if(wordP_C_EByChWord[chWord][enWord] < ALIGNMENT_PROBABILITY){continue;}
-		cout << i << "," << chWord << "," << enWord << endl;
-		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << "," << fc << "," << wordP_C_EByChWord[chWord][enWord] << endl;
+		resultLine = chWord + "," + enWord + "," + int2str(chFreq) + "," + int2str(enFreq) + ","  + int2str(pairFreq) + "," + double2str(mu)  + "," + double2str(cc) + "," + double2str(lr) + "," + double2str(dc) + "," + double2str(fc) + "," + double2str(alignProbability);
+		cout << resultLine << endl;
 	}
-	fout.close();
-	return 0;
+	return true;	
 }
 
 bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGram, map<string, int> &specialLib, map<string, int> &enWordInfo){
 	int i, j,gramSize, subIdx;
 	string tmpStr;
 	vector<vector<string>> atomSentence;
-	nGram.clear();
+	if(nGram.size() > 1){
+		nGram.resize(0);
+		nGram.clear();	
+	}
 	divideSentenceByAnchor(sentenceSeg, atomSentence);
 	for(gramSize = 1; gramSize <= maxGram; gramSize++){//For each gram size
 		for(subIdx = 0; subIdx < atomSentence.size(); subIdx++){//For each Sub-sentence which divided by anchor
@@ -179,17 +255,16 @@ bool filtPhrase(string phrase){
 	int i,t;
 	int reti;
 	regex_t regexLanguage;
-	reti = regcomp(&regexLanguage, "[0-9]", 0);
-	explode(' ', phrase, wordSeg);
-
-	if(phrase.length() < 3){return false;}
-
+	reti = regcomp(&regexLanguage, "[0-9]", REG_ECOLLATE);
 	reti = regexec(&regexLanguage, phrase.c_str(), 0, NULL, 0);
 	if( !reti ){//文句包含數字:
 		return false;
 	}
 
-	t = wordSeg.size()-1;
+	if(phrase.length() < 3){return false;}
+	explode(' ', phrase, wordSeg);
+	if(wordSeg.size() > 0){	t = wordSeg.size()-1;}
+	else{return false;}
 	if(wordSeg[0] == "of" || wordSeg[0] == "off" || wordSeg[0] == "and"
 	|| wordSeg[0] == "or" || wordSeg[0] == "but" || wordSeg[0] == "nor"
 	|| wordSeg[0] == "i" || wordSeg[0] == "he" || wordSeg[0] == "she"
@@ -201,7 +276,6 @@ bool filtPhrase(string phrase){
     || wordSeg[0] == "who" || wordSeg[0] == "how"){
 		return false;
 	}
-	
 	if(wordSeg[t] == "and" || wordSeg[t] == "or" || wordSeg[t] == "but"
 	|| wordSeg[t] == "his" || wordSeg[t] == "her" || wordSeg[t] == "it"
 	|| wordSeg[t] == "i" || wordSeg[t] == "they" || wordSeg[t] == "them"
@@ -259,7 +333,7 @@ bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWi
 	double scvValue, sceValue, fcValue;
 	if(iteration == 0){return true;}
 	//initialize
-	cout << "\E[1;34;40m\tInitialize...\E[0m" << endl;
+	cerr << "\E[1;34;40m\tInitialize...\E[0m" << endl;
 	for(pos = wordPair.begin(); pos != wordPair.end(); pos++){
 		tmpStr = pos->first;
 		f11 = pos->second;
@@ -278,7 +352,7 @@ bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWi
 	}
 */
 	for(i = 1; i <= iteration; i++){
-		cout << "\E[1;34;40m\tEM iteration: " << i << "\E[0m" << endl;
+		cerr << "\E[1;34;40m\tEM iteration: " << i << "\E[0m" << endl;
 		//E-step: Generate S(c.e) value
 		for(infoPos = wordS_C_EByChWord.begin(); infoPos != wordS_C_EByChWord.end(); infoPos++){//For each chWord
 			chWord = infoPos->first;
@@ -304,6 +378,5 @@ bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWi
 			}
 		}
 	}
-
 	return true;
 }
