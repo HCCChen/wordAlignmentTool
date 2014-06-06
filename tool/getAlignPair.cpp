@@ -80,70 +80,6 @@ int main(int argc, char* argv[]){
 		else{cerr << i << " : " << knownChWord[i] << " drop!" << endl;}
 	}
 	return 0;
-	//==============================================
-/*
-	fin.open(CH_CONTEXT_PATH.c_str(), ios::in);
-	fin2.open(EN_CONTEXT_PATH.c_str(), ios::in);
-	cerr << "\E[1;32;40mGenerating word pair by n-gram, please wait a minute...\E[0m" << endl;
-	while(!fin.eof()){//For each sentence pair
-		fin.getline(buf, 4096);
-		chLaw.assign(buf);
-		fin2.getline(buf, 4096);
-		enLaw.assign(buf);
-		if(chLaw.length() < 1 || enLaw.length() < 1){continue;}
-		//Divide Chinese word
-		totalNumber++;
-		chSentecneSeg.clear();
-		for(i = 0; i < knownChWord.size(); i++){//for each known chWord
-			if(chLaw.find(knownChWord[i]) != string::npos){//For each chword which appear in this sentence
-				chSentecneSeg.push_back(knownChWord[i]);
-				if(chWordInfo.find(knownChWord[i]) == chWordInfo.end()){//Record fequency of chWord
-					chWordInfo[knownChWord[i]] = 1;
-				}
-				else{
-					chWordInfo[knownChWord[i]]++;
-				}
-			}
-		}
-		if(chSentecneSeg.size() == 0){continue;}
-		//Get n-gram of english word
-		explode(' ', enLaw, enSentecneSeg);
-		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);
-		totalPair += generateWordPair(chSentecneSeg, nGram, wordPair,wordPairWithFC ,specialLibCh);
-		cerr << totalNumber << " : " << wordPairWithFC.size() << " pairs, total have " << enWordInfo.size() << " english words" << endl;
-	}
-	fin.close();
-	fin2.close();
-	cerr << "\E[1;32;40mHave Generate " << totalPair << " pairs from " << totalNumber << " lines\E[0m" << endl;
-
-	cerr << "\E[1;32;40mGenerate EM value by Expectation-maximization algorithm \E[0m" << endl;
-	generateEMValue(wordPair , wordPairWithFC, wordP_C_EByChWord, ITERATION_NUMBER);
-	//Output
-	cerr << "\E[1;32;40mOutput word pair,total have " << wordPair.size() << " pairs\E[0m" << endl;
-	fout.open(OUTPUT_PATH.c_str(), ios::out);
-	for(i = 0, iter = wordPair.begin();iter != wordPair.end(); iter++){
-		if(iter->second < FILTER_OF_FREQUENCY){continue;}
-		tmpStr = iter->first;
-		chWord = tmpStr.substr(0, tmpStr.find(","));
-		enWord = tmpStr.substr(tmpStr.find(",")+1);
-		pairFreq = iter->second;
-//		alignProbability = wordP_C_EByChWord[chWord][enWord];
-		chFreq = chWordInfo[chWord]-pairFreq;
-		enFreq = enWordInfo[enWord]-pairFreq;
-		mu = getMutualInformation(totalNumber, chFreq, enFreq, pairFreq);
-		cc = getCorrelationCoefficient(totalNumber, chFreq, enFreq, pairFreq);
-		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
-		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
-		fc = wordPairWithFC[tmpStr];
-		//Basic Filter	
-		if(mu < 0 || lr < 0 || cc < 0 || dc < 0 || pairFreq < FILTER_OF_FREQUENCY){continue;}
-		if(alignProbability < ALIGNMENT_PROBABILITY){continue;}
-		fout << chWord << "," << enWord << "," << chFreq << "," << enFreq << ","  << pairFreq << "," << mu  << "," << cc << "," << lr << "," << dc << "," << fc << "," << alignProbability << endl;
-		i++;
-	}
-	fout.close();
-*/
-	return 0;
 }
 
 
@@ -184,10 +120,10 @@ bool extractGramPair(string chWord, vector<string> &chLawList, vector<string> &e
 		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
 		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
 		fc = wordPairWithFC[tmpStr];
-		alignProbability = wordP_C_EByChWord[chWord][enWord];
+		//alignProbability = wordP_C_EByChWord[chWord][enWord];
 		//Basic Filter	
 		if(mu < 0 || lr < 0 || cc < 0 || dc < 0 || pairFreq < FILTER_OF_FREQUENCY){continue;}
-		if(wordP_C_EByChWord[chWord][enWord] < ALIGNMENT_PROBABILITY){continue;}
+		if(alignProbability < ALIGNMENT_PROBABILITY){continue;}
 		resultLine = chWord + "," + enWord + "," + int2str(chFreq) + "," + int2str(enFreq) + ","  + int2str(pairFreq) + "," + double2str(mu)  + "," + double2str(cc) + "," + double2str(lr) + "," + double2str(dc) + "," + double2str(fc) + "," + double2str(alignProbability);
 		cout << resultLine << endl;
 	}
@@ -198,10 +134,7 @@ bool generateNGram(vector<string> &sentenceSeg, vector<string> &nGram, int maxGr
 	int i, j,gramSize, subIdx;
 	string tmpStr;
 	vector<vector<string>> atomSentence;
-	if(nGram.size() > 1){
-		nGram.resize(0);
-		nGram.clear();	
-	}
+	nGram.clear();	
 	divideSentenceByAnchor(sentenceSeg, atomSentence);
 	for(gramSize = 1; gramSize <= maxGram; gramSize++){//For each gram size
 		for(subIdx = 0; subIdx < atomSentence.size(); subIdx++){//For each Sub-sentence which divided by anchor
@@ -254,17 +187,16 @@ bool filtPhrase(string phrase){
 	vector<string> wordSeg;
 	int i,t;
 	int reti;
-	regex_t regexLanguage;
-	reti = regcomp(&regexLanguage, "[0-9]", REG_ECOLLATE);
-	reti = regexec(&regexLanguage, phrase.c_str(), 0, NULL, 0);
-	if( !reti ){//文句包含數字:
-		return false;
-	}
 
 	if(phrase.length() < 3){return false;}
 	explode(' ', phrase, wordSeg);
 	if(wordSeg.size() > 0){	t = wordSeg.size()-1;}
 	else{return false;}
+
+	for(i = 0; i < phrase.length(); i++){
+		if(phrase[i] >= '0' && phrase[i] <= '9'){return false;}
+	}
+
 	if(wordSeg[0] == "of" || wordSeg[0] == "off" || wordSeg[0] == "and"
 	|| wordSeg[0] == "or" || wordSeg[0] == "but" || wordSeg[0] == "nor"
 	|| wordSeg[0] == "i" || wordSeg[0] == "he" || wordSeg[0] == "she"
@@ -291,17 +223,11 @@ bool filtPhrase(string phrase){
 }
 
 int generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<string, int> &wordPair,map<string, double> &wordPairWithFC ,map<string, int> &specialLib){
-	int i,j,reti , totalPair = 0;
+	int i, j, totalPair = 0;
 	string tmpStr;
-	regex_t regexLanguage;
-	reti = regcomp(&regexLanguage, "[a-zA-Z0-9]", 0);
 	for(i = 0; i < chSentecneSeg.size(); i++){//For each chinese word
 		//Chinese filter
 		if(chSentecneSeg[i].length() < 3||specialLib.find(chSentecneSeg[i]) != specialLib.end()){continue;}
-		reti = regexec(&regexLanguage, chSentecneSeg[i].c_str(), 0, NULL, 0);
-		if( !reti ){//中文文句包含英文數字:
-		//	continue;
-		}
 		//Generate pair
 		for(j = 0; j < nGram.size(); j++){//For each gram
 			if(nGram[j].length() < 2){continue;}

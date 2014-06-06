@@ -19,6 +19,8 @@ typedef struct ALIGN_INFO{//For unknown word pair
 	vector<double> lr;
 	vector<double> dc;
 	vector<double> fc;
+	vector<double> ap; //Alignment Probability
+	vector<double> sumOfParameter;
 }alignInfo;
 
 bool updateAlignInfo(map<string, alignInfo> &wordPairInfo, vector<string> &singlePairInfo);
@@ -26,18 +28,22 @@ string getBestAlignByDC(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByCC(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByLR(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByMU(string chWord, map<string, alignInfo> &pairInfo);
+string getBestAlignByFC(string chWord, map<string, alignInfo> &pairInfo);
+string getBestAlignByAP(string chWord, map<string, alignInfo> &pairInfo);
+string getBestAlignBySUM(string chWord, map<string, alignInfo> &pairInfo);
+string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo);
+bool vector_cmp_by_dc(vector<string> a, vector<string> b);
+
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign20140522";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
 	const string MISS_ALIGN_RESULT_PATH = "../data/errorRecordWithoutError";
-	const double FILT_PROBABILITY = 0.2;
-	const int FILT_ALIGNMENT_FREQUENCY = 3;//More than ...
-	const int FILT_CONTEXT_FREQUENCY = 0;//More than ...
-	const double FILT_DICE_VALUE = 0.2;//More than ..
 	const bool FILTER_SWITCH = false;//true = do filter
-	const int NUMBER_OF_FINAL_ALIGN = 5;
+	const bool USE_GLOBAL_INFO = false;
+	const bool USE_LOCAL_INFO = false;
+	const int NUMBER_OF_FINAL_ALIGN = 1;
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
 	if(argc == 3){
@@ -51,6 +57,7 @@ int main(int argc, char* argv[]){
 	map<string, alignLib> wordLib;
 	map<string, alignInfo> wordPairInfo;
 	map<string, alignInfo>::iterator iter;
+	vector<vector<string>> pairList;
 	vector<string> candidateSeg;
 	vector<string> resultPool;
 	fstream fin, fout, ferr1, ferr2;
@@ -102,22 +109,54 @@ int main(int argc, char* argv[]){
 		filtFlag = 0;
 		//Divide Word
 		totalAlign++;
+		candidateSeg.clear();
 		explode(',', tmpStr, candidateSeg);
-		updateAlignInfo(wordPairInfo, candidateSeg);
+		if(FILTER_SWITCH == false){
+			tmpStr = candidateSeg[0] + "," + candidateSeg[1];
+			resultPool.push_back(tmpStr);
+		}
+		else if(USE_LOCAL_INFO == true){
+			updateAlignInfo(wordPairInfo, candidateSeg);	//For local information
+		}
+		else if(USE_GLOBAL_INFO == true){
+			pairList.push_back(candidateSeg);	//For global information
+		}
 	}
 	//Find Best align for each chWord
-	cout << "\E[1;32;40mGet best align pair\E[0m" << endl;
-	for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){
-		tmpStr = iter->first;
-		for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
-			resultPool.push_back(getBestAlignByLR(tmpStr, wordPairInfo));
+	if(USE_LOCAL_INFO == true && FILTER_SWITCH == true){
+		cout << "\E[1;32;40mGet best align pair for each ChWord\E[0m" << endl;
+		for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){
+			tmpStr = iter->first;
+			for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
+				//resultPool.push_back(getBestAlignByDC(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByCC(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByLR(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByFC(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByMU(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByAP(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignBySUM(tmpStr, wordPairInfo));
+				//resultPool.push_back(getBestAlignByFreq(tmpStr, wordPairInfo));
+			}
 		}
-		numberOfFinalResult += NUMBER_OF_FINAL_ALIGN;
 	}
+	if(USE_GLOBAL_INFO == true && FILTER_SWITCH == true){
+		cout << "\E[1;32;40mGet best align pair from all path\E[0m" << endl;
+		sort(pairList.begin(), pairList.end(), vector_cmp_by_dc);
+		for(i = 0; i < 10690; i++){
+			tmpStr = pairList[i][0] + "," + pairList[i][1];
+			resultPool.push_back(tmpStr);
+		}
+	}
+
+	//Remove Repeat item
+	sort(resultPool.begin(), resultPool.end());
+	resultPool.erase( unique( resultPool.begin(), resultPool.end() ), resultPool.end());
+
+	numberOfFinalResult = resultPool.size();
 
 	cout << "\E[1;32;40mEvaluate result...\E[0m" << endl;
 	//-----------evaluation candidate and record it----------
-	for(i = 0; i < resultPool.size(); i++){
+	for(i = 0, partErrorAlign = 0, fullErrorAlign = 0; i < resultPool.size(); i++){
 		chWord = resultPool[i].substr(0, resultPool[i].find(","));
 		alignWord = resultPool[i].substr(resultPool[i].find(",")+1);
 		if(wordLib[chWord].useFlag == 0){
@@ -141,15 +180,15 @@ int main(int argc, char* argv[]){
 	}
 
 	//Output evalute result
-	fullErrorAlign = totalAlign - correctAlign - missAlign - partErrorAlign - dropAlign;
+	fullErrorAlign = numberOfFinalResult - correctAlign - missAlign - partErrorAlign - dropAlign;
 	precisionRate = (double)correctAlign*100/(double)(numberOfFinalResult);
 	recallRate = (double)correctAlign*100/(double)(alignLibCount);
 	fout << "==============================" << endl;
 	fout << "Known Library count: " << alignLibCount << " Pairs" << endl;
 	fout << "Total Chinese Align Word: " << alignCountChWord << " Pairs" << endl;
-	fout << "Used Chinese Align Count: " << usedAlign << " Pairs" << endl;
+	fout << "Used Word Align Count: " << usedAlign << " Pairs" << endl;
 	fout << "Total Align Word: " << totalAlign << " words"  << endl;
-	fout << "Total Align Word: " << totalAlign << " words"  << endl;
+	fout << "All candidate word: " << numberOfFinalResult << " words"  << endl;
 	fout << "Correct Align Word: " << correctAlign << "(" << singleWord << "+" << phraseWord << ") words"<< endl;
 	fout << "Part Error Align Word: " << partErrorAlign << " words" << endl;
 	fout << "Full Error Align Word: " << fullErrorAlign << " words" << endl;
@@ -181,7 +220,9 @@ bool updateAlignInfo(map<string, alignInfo> &wordPairInfo, vector<string> &singl
 	wordPairInfo[chWord].cc.push_back(atof(singlePairInfo[6].c_str()));
 	wordPairInfo[chWord].lr.push_back(atof(singlePairInfo[7].c_str()));
 	wordPairInfo[chWord].dc.push_back(atof(singlePairInfo[8].c_str()));
-	wordPairInfo[chWord].fc.push_back(0);
+	wordPairInfo[chWord].fc.push_back(atof(singlePairInfo[9].c_str()));
+	wordPairInfo[chWord].ap.push_back(atof(singlePairInfo[10].c_str()));
+	wordPairInfo[chWord].sumOfParameter.push_back(atof(singlePairInfo[6].c_str()) + atof(singlePairInfo[7].c_str()) + atof(singlePairInfo[8].c_str()) + atof(singlePairInfo[5].c_str()) + atof(singlePairInfo[9].c_str()));
 	return true;
 }
 
@@ -223,4 +264,49 @@ string getBestAlignByLR(string chWord, map<string, alignInfo> &pairInfo){
 	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
 	pairInfo[chWord].lr[idx] = -1;
 	return tmpStr;
+}
+
+string getBestAlignByFC(string chWord, map<string, alignInfo> &pairInfo){
+	string tmpStr = "";
+	vector<double>::iterator pos = max_element(pairInfo[chWord].fc.begin(), pairInfo[chWord].fc.end());
+	double dcValue = *pos;
+	int idx = find(pairInfo[chWord].fc.begin(), pairInfo[chWord].fc.end(), dcValue) - pairInfo[chWord].fc.begin();
+	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
+	pairInfo[chWord].fc[idx] = -1;
+	return tmpStr;
+}
+
+string getBestAlignByAP(string chWord, map<string, alignInfo> &pairInfo){
+	string tmpStr = "";
+	vector<double>::iterator pos = max_element(pairInfo[chWord].ap.begin(), pairInfo[chWord].ap.end());
+	double dcValue = *pos;
+	int idx = find(pairInfo[chWord].ap.begin(), pairInfo[chWord].ap.end(), dcValue) - pairInfo[chWord].ap.begin();
+	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
+	pairInfo[chWord].ap[idx] = -1;
+	return tmpStr;
+}
+
+
+string getBestAlignBySUM(string chWord, map<string, alignInfo> &pairInfo){
+	string tmpStr = "";
+	vector<double>::iterator pos = max_element(pairInfo[chWord].sumOfParameter.begin(), pairInfo[chWord].sumOfParameter.end());
+	double dcValue = *pos;
+	int idx = find(pairInfo[chWord].sumOfParameter.begin(), pairInfo[chWord].sumOfParameter.end(), dcValue) - pairInfo[chWord].sumOfParameter.begin();
+	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
+	pairInfo[chWord].sumOfParameter[idx] = -1;
+	return tmpStr;
+}
+
+string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo){
+	string tmpStr = "";
+	vector<int>::iterator pos = max_element(pairInfo[chWord].pairFreq.begin(), pairInfo[chWord].pairFreq.end());
+	int dcValue = *pos;
+	int idx = find(pairInfo[chWord].pairFreq.begin(), pairInfo[chWord].pairFreq.end(), dcValue) - pairInfo[chWord].pairFreq.begin();
+	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
+	pairInfo[chWord].pairFreq[idx] = -1;
+	return tmpStr;
+}
+
+bool vector_cmp_by_dc(vector<string> a, vector<string> b){
+	return a[8] > b[8];//index of dice value
 }
