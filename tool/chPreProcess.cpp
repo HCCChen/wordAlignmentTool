@@ -16,7 +16,7 @@ int main(int argc, char* argv[]){
 	vector<int> basicWordFlag;
 	fstream fin, fout;
 	char buf[4096];
-	string tmpStr, mergeWord, wordPool[512], lawSentence, emptyStr="";
+	string tmpStr, mergeWord, wordPool[512], lawSentence, lawSentenceBackUp ,emptyStr="";
 	string punctuation[16] = {" ，"," 。"," 、"," ；"," ："," ＂"," ｛"," ｝"," 「"," 」"," 『"," 』","（"," ）"," 　", "\r"};
 	int wordPoolSize, i,j,k, flag, inLineFlag, checkLongerFlag;
 
@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
 				}
 			}
 			//Merge Sentence
+			lawSentenceBackUp = lawSentence;
 			wordPoolSize = explode(' ', lawSentence, wordPool);
 //			fout << lawSentence << endl;
 			for(i = wordPoolSize-1, lawSentence = "",tmpStr = ""; i >= 0; i--){//for each word seg
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]){
 						i = i-2;
 					}
 				}
-				else if(tmpStr == "元" || tmpStr == "歲" || tmpStr == "項" || tmpStr == "款" || tmpStr == "小時" || tmpStr == "編" || tmpStr == "章"){
+				else if((tmpStr == "元" || tmpStr == "歲" || tmpStr == "項" || tmpStr == "款" || tmpStr == "小時" || tmpStr == "編" || tmpStr == "章") && i-1 >= 0){
 					lawSentence = wordPool[i-1] + tmpStr + ' ' + lawSentence;
 					i--;
 				}
@@ -57,6 +58,9 @@ int main(int argc, char* argv[]){
 				}
 			}
 			//Output to file
+			if(lawSentence.length() < 2){
+				lawSentence = lawSentenceBackUp;
+			}
 			fout << lawSentence << endl;
 	}
 	fin.close();
