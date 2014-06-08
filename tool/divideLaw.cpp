@@ -28,6 +28,8 @@ int countSubstrFreq(string sources, string substr);
 int main(int argc, char* argv[]){
 	const string DIR_PATH = "../data/";
 	const string DIR_NAME = "BiLawSentenceCandidate/";
+	//const string DIR_NAME = "BiLawSentenceTest/";
+	//const string DIR_NAME = "BiLawSentenceSubSet/";
 	int numberOfErrorFile = 0;
 	vector<string> files = vector<string>();
 	getdir(DIR_PATH + DIR_NAME, files);
@@ -40,7 +42,7 @@ int main(int argc, char* argv[]){
 			cout << files[i] << " has error, ignore!!" << endl;
 		}
     }
-	cout << endl << "Use " << (files.size()-numberOfErrorFile) << " laws" << endl;
+	cout << "Use " << (files.size()-numberOfErrorFile) << " laws" << endl;
 	return 0;
 }
 

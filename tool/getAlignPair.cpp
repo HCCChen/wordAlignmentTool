@@ -23,7 +23,7 @@ int generateWordPair(vector<string> chSentecneSeg, vector<string> nGram, map<str
 bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWithFC, map<string, map<string, double>> &wordP_C_EByChWord, const int iteration);
 
 const int FILTER_OF_FREQUENCY = 1;//最少須出現次數
-const double ALIGNMENT_PROBABILITY = 0;//對齊機率門檻
+const double ALIGNMENT_PROBABILITY = 0.001;//對齊機率門檻
 
 int main(int argc, char* argv[]){
 	const int ITERATION_NUMBER = 4;
@@ -104,7 +104,7 @@ bool extractGramPair(string chWord, vector<string> &chLawList, vector<string> &e
 		}
 	}
 	if(wordPair.size() == 0){return false;}
-	//generateEMValue(wordPair , wordPairWithFC, wordP_C_EByChWord, emInteration);
+	generateEMValue(wordPair , wordPairWithFC, wordP_C_EByChWord, emInteration);
 	//Output information
 	cerr << "\t" << wordPair.size() << endl;
 	for(iter = wordPair.begin();iter != wordPair.end(); iter++){
@@ -120,7 +120,7 @@ bool extractGramPair(string chWord, vector<string> &chLawList, vector<string> &e
 		lr = getLikehoodRatios(totalNumber, chFreq, enFreq, pairFreq);
 		dc = getDice(totalNumber, chFreq, enFreq, pairFreq);
 		fc = wordPairWithFC[tmpStr];
-		//alignProbability = wordP_C_EByChWord[chWord][enWord];
+		alignProbability = wordP_C_EByChWord[chWord][enWord];
 		//Basic Filter	
 		if(mu < 0 || lr < 0 || cc < 0 || dc < 0 || pairFreq < FILTER_OF_FREQUENCY){continue;}
 		if(alignProbability < ALIGNMENT_PROBABILITY){continue;}
@@ -278,7 +278,7 @@ bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWi
 	}
 */
 	for(i = 1; i <= iteration; i++){
-		cerr << "\E[1;34;40m\tEM iteration: " << i << "\E[0m" << endl;
+		//cerr << "\E[1;34;40m\tEM iteration: " << i << "\E[0m" << endl;
 		//E-step: Generate S(c.e) value
 		for(infoPos = wordS_C_EByChWord.begin(); infoPos != wordS_C_EByChWord.end(); infoPos++){//For each chWord
 			chWord = infoPos->first;

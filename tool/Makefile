@@ -14,6 +14,7 @@ all: library
 	${CC} revertEnglishWord.cpp ${CFLAGS} -o revertEnglishWord.out
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
 	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
+	${CC} supportModel.cpp ${CFLAGS} -o supportModel.out
 library: library.cpp
 	${CC} library.h library.cpp -O2 -std=c++11 -c
 phraseMerge: phraseMerge.cpp
@@ -40,5 +41,7 @@ filtKnownAlignLib: filtKnownAlignLib.cpp
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
 getAlignPair: getAlignPair.cpp 
 	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
+supportModel: supportModel.cpp
+	${CC} supportModel.cpp ${CFLAGS} -o supportModel.out
 clear:
 	rm *.out

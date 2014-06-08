@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$switchRevert = "true"
+$switchRevert = "false"
 
 cd ../data
 rm chBase* enBase*
@@ -21,49 +21,7 @@ printf "\E[1;34;40m\tRemove known align! \E[0m\n"
 #enBase -> enBaseTmp
 ./removeKnownAlign.out
 
-#----------------------------------------------------------------------------
-if [ "$switchRevert" == "true" ]; then
-#chBaseTmp2 -> chBaseTmp
-#enBaseTmp -> enBase
-cd ../data
-mv chBaseTmp2 chBaseTmp
-mv enBaseTmp enBase
-cd ../tool
-
-printf "\E[1;34;40m\tRevert English word to basic type \E[0m\n"
-#chBaseTmp -> chBaseTmp
-#enBase -> enBaseTmp
-cd englishLemma/
-./getLemma.sh ../../data/enBase ../../data/
-cd ../
-./revertEnglishWord.out
-
-printf "\E[1;34;40m\tRemove known align! \E[0m\n"
-#chBaseTmp -> chBaseTmp
-#enBaseTmp -> enBase
-cd ../data
-mv enBaseTmp enBase
-cd ../tool
-#chBaseTmp -> chBaseTmp2
-#enBase -> enBaseTmp
-./removeKnownAlign.out
-#chBaseTmp2 -> chBaseTmp
-#enBaseTmp -> enBaseTmp
-cd ../data
-mv chBaseTmp2 chBaseTmp
-cd ../tool
-
-fi
-#----------------------------------------------------------------------------
-
-printf "\E[1;34;40m\tOther pre-process and move them to 'giza++' dictionary! \E[0m\n"
-#chBaseTmp2 -> chBaseTrain
-#enBaseTmp -> enBaseTrain
-./chPreProcess.out
-./enPreProcess.out
-cd ../data
-cp chBaseTrain enBaseTrain ../giza++/
-cd ../tool
-
 printf "\E[1;34;40m\tGenerate word pair by n-gram \E[0m\n"
-./getAlignPair.out
+#chBase + enBaseTmp -> ngramPairResult
+./getAlignPair.out > ../data/ngramPairResult
+./evaluation.out ../data/ngramPairResult ../data/evaluteResult

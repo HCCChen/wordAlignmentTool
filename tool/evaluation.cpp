@@ -34,16 +34,20 @@ string getBestAlignBySUM(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo);
 bool vector_cmp_by_dc(vector<string> a, vector<string> b);
 
+const double THRESHOLD_OF_PROBABILITY = 0.2;
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign20140522";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
 	const string MISS_ALIGN_RESULT_PATH = "../data/errorRecordWithoutError";
+	const string EN_PREFIX_PATH = "../data/languageBase/enPrefix";
+	const string EN_POSTFIX_PATH = "../data/languageBase/enPostfix";
+	const string ENLIB_PATH = "../data/enBase.xml";
 	const bool FILTER_SWITCH = false;//true = do filter
 	const bool USE_GLOBAL_INFO = false;
 	const bool USE_LOCAL_INFO = false;
-	const int NUMBER_OF_FINAL_ALIGN = 1;
+	const int NUMBER_OF_FINAL_ALIGN = 5;
 	string ALIGN_PATH;
 	string EVALUTE_RESULT_PATH;
 	if(argc == 3){
@@ -52,23 +56,31 @@ int main(int argc, char* argv[]){
 	}
 	else{
 		ALIGN_PATH = "../data/ngramPairResult";
+//		ALIGN_PATH = "../data/supportAlign";
 		EVALUTE_RESULT_PATH = "../data/evaluteResult";
 	}
 	map<string, alignLib> wordLib;
 	map<string, alignInfo> wordPairInfo;
 	map<string, alignInfo>::iterator iter;
+	map<string, string> lemmaPair;
 	vector<vector<string>> pairList;
 	vector<string> candidateSeg;
 	vector<string> resultPool;
+	vector<string> enPrefix;
+	vector<string> enPostfix;
 	fstream fin, fout, ferr1, ferr2;
 	char buf[4096];
-	string tmpStr, chWord, alignWord;
-	int partErrorFlag, i ,j , filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0, numberOfFinalResult = 0;
+	string tmpStr, chWord, alignWord, enBuf1, enBuf2, baseWord, lemmaWord;
+	int i, j, k, filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0, numberOfFinalResult = 0, partCorrect = 0, partCorrectFlag = 0;
 	int correctAlign = 0, partErrorAlign = 0, fullErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0, usedAlign = 0;
+	int pos1, pos2;
 	double gizaFreq, gizaProbability, pairFreq, diceValue;
-	double precisionRate, recallRate;
+	double precisionRate, recallRate, recallRateForCandidate, precisionRateForGC;
+
 	//load align lib
-	cout << "\E[1;32;40mPreparing!\E[0m" << endl;
+	cerr << "\E[1;32;40mPreparing!\E[0m" << endl;
+	loadFile(EN_PREFIX_PATH, enPrefix);
+	loadFile(EN_POSTFIX_PATH, enPostfix);
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
 		fin.getline(buf, 4096);
@@ -95,9 +107,31 @@ int main(int argc, char* argv[]){
 		}
 	}
 	fin.close();
+
+	fin.open(ENLIB_PATH.c_str(), ios::in);
+	while(!fin.eof()){//Load lemma Lib
+		fin.getline(buf, 4096);
+		tmpStr.assign(buf);
+		if(tmpStr.find("<word>") != string::npos){
+			pos1 = tmpStr.find(">");
+			pos2 = tmpStr.find_last_of("<");
+			baseWord = tmpStr.substr(pos1+1, pos2 - pos1-1);
+		}
+		else if(tmpStr.find("<lemma>") != string::npos){
+			pos1 = tmpStr.find(">");
+			pos2 = tmpStr.find_last_of("<");
+			lemmaWord = tmpStr.substr(pos1+1, pos2 - pos1-1);
+			if(baseWord != lemmaWord && lemmaPair.find(baseWord) == lemmaPair.end()){
+				lemmaPair[baseWord] = lemmaWord;
+			}
+		}
+	}
+	fin.close();
+
+
 	
 	//Judge Result
-	cout << "\E[1;32;40mLoad all pair, please wait a minute...\E[0m" << endl;
+	cerr << "\E[1;32;40mLoad all pair, please wait a minute...\E[0m" << endl;
 	fin.open(ALIGN_PATH.c_str(), ios::in);
 	fout.open(EVALUTE_RESULT_PATH.c_str(), ios::out);
 	ferr1.open(PART_ERROR_RESULT_PATH.c_str(), ios::out);
@@ -124,8 +158,8 @@ int main(int argc, char* argv[]){
 	}
 	//Find Best align for each chWord
 	if(USE_LOCAL_INFO == true && FILTER_SWITCH == true){
-		cout << "\E[1;32;40mGet best align pair for each ChWord\E[0m" << endl;
-		for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){
+		cerr << "\E[1;32;40mGet best align pair for each ChWord\E[0m" << endl;
+		for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){//for each chWord
 			tmpStr = iter->first;
 			for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
 				//resultPool.push_back(getBestAlignByDC(tmpStr, wordPairInfo));
@@ -140,7 +174,7 @@ int main(int argc, char* argv[]){
 		}
 	}
 	if(USE_GLOBAL_INFO == true && FILTER_SWITCH == true){
-		cout << "\E[1;32;40mGet best align pair from all path\E[0m" << endl;
+		cerr << "\E[1;32;40mGet best align pair from all path\E[0m" << endl;
 		sort(pairList.begin(), pairList.end(), vector_cmp_by_dc);
 		for(i = 0; i < 10690; i++){
 			tmpStr = pairList[i][0] + "," + pairList[i][1];
@@ -154,50 +188,95 @@ int main(int argc, char* argv[]){
 
 	numberOfFinalResult = resultPool.size();
 
-	cout << "\E[1;32;40mEvaluate result...\E[0m" << endl;
+	cerr << "\E[1;32;40mEvaluate result...\E[0m" << endl;
 	//-----------evaluation candidate and record it----------
-	for(i = 0, partErrorAlign = 0, fullErrorAlign = 0; i < resultPool.size(); i++){
+	for(i = 0, partErrorAlign = 0, fullErrorAlign = 0; i < resultPool.size(); i++){//For each Pair
 		chWord = resultPool[i].substr(0, resultPool[i].find(","));
 		alignWord = resultPool[i].substr(resultPool[i].find(",")+1);
 		if(wordLib[chWord].useFlag == 0){
 			wordLib[chWord].useFlag = 1;
 			usedAlign += (wordLib[chWord].alignCount);
 		}
-		for(j = 0, partErrorFlag = -1; j < wordLib[chWord].alignCount; j++){//for each align lib
+		for(j = 0, partCorrectFlag = -1; j < wordLib[chWord].alignCount; j++){//for each align lib
 			if(trim(wordLib[chWord].enWord[j]) == trim(alignWord)){//correct align
 				if(alignWord.find(' ') != string::npos){phraseWord++;}
 				else{singleWord++;}
 				correctAlign++;
-				wordLib[chWord].enWord[j] = "";
-				partErrorFlag = -2;
+				partCorrectFlag = -1;
+				wordLib[chWord].enWord[j] = "";	//Not repeat result
 				fout << chWord << "," << alignWord << endl;
 				break;
 			}
-			if(wordLib[chWord].enWord[j].find(alignWord) != string::npos){
-				partErrorFlag = j;
+			if((wordLib[chWord].enWord[j].find(alignWord) != string::npos
+			|| alignWord.find(wordLib[chWord].enWord[j]) != string::npos)
+			&& wordLib[chWord].enWord[j].length() > 2){//Could be Part correct
+				if(alignWord.find(" ") == string::npos && wordLib[chWord].enWord[j].find(" ") == string::npos){
+					if(lemmaPair.find(alignWord) != lemmaPair.end()){
+						cout << enBuf1 << "|" << lemmaPair[alignWord] << endl;
+						enBuf1 = lemmaPair[alignWord];	
+					}
+					else{enBuf1 = alignWord;}
+
+					if(lemmaPair.find(wordLib[chWord].enWord[j]) != lemmaPair.end()){
+						enBuf2 = lemmaPair[wordLib[chWord].enWord[j]];
+					}
+					else{enBuf2 = wordLib[chWord].enWord[j];}
+					if(enBuf1 == enBuf2){partCorrectFlag = j;}
+				}
+				else{
+					//for pre-fix
+					enBuf1 = alignWord;
+					enBuf2 = wordLib[chWord].enWord[j];
+					for(k = 0; k < enPrefix.size(); k++){
+						tmpStr = enPrefix[k]+" ";
+						if(enBuf1.find(tmpStr) == 0){enBuf1 = enBuf1.substr(enBuf1.find(" ")+1);}
+						if(enBuf2.find(tmpStr) == 0){enBuf2 = enBuf2.substr(enBuf2.find(" ")+1);}
+						if(enBuf1 == enBuf2){partCorrectFlag = j;}
+					}
+					//for post-fox
+					enBuf1 = alignWord;
+					enBuf2 = wordLib[chWord].enWord[j];
+					for(k = 0; k < enPostfix.size(); k++){
+						if(enBuf1.substr(enBuf1.find_last_of(" ")+1) == enPostfix[k]){
+							enBuf1 = enBuf1.substr(0, enBuf1.find_last_of(" "));
+						}
+						if(enBuf2.substr(enBuf2.find_last_of(" ")+1) == enPostfix[k]){
+							enBuf2 = enBuf2.substr(0, enBuf2.find_last_of(" "));
+						}
+						if(enBuf1 == enBuf2){partCorrectFlag = j;}
+					}
+
+				}
 			}
+		}
+		if(partCorrectFlag != -1){
+			ferr1 << chWord << "," << alignWord << "," << wordLib[chWord].enWord[partCorrectFlag] << endl;
+			partCorrect++;
 		}
 	}
 
 	//Output evalute result
 	fullErrorAlign = numberOfFinalResult - correctAlign - missAlign - partErrorAlign - dropAlign;
 	precisionRate = (double)correctAlign*100/(double)(numberOfFinalResult);
+	precisionRateForGC = (double)(correctAlign+partCorrect)*100/(double)(numberOfFinalResult);
 	recallRate = (double)correctAlign*100/(double)(alignLibCount);
+	recallRateForCandidate = (double)correctAlign*100/(double)(usedAlign);
 	fout << "==============================" << endl;
 	fout << "Known Library count: " << alignLibCount << " Pairs" << endl;
 	fout << "Total Chinese Align Word: " << alignCountChWord << " Pairs" << endl;
 	fout << "Used Word Align Count: " << usedAlign << " Pairs" << endl;
 	fout << "Total Align Word: " << totalAlign << " words"  << endl;
 	fout << "All candidate word: " << numberOfFinalResult << " words"  << endl;
-	fout << "Correct Align Word: " << correctAlign << "(" << singleWord << "+" << phraseWord << ") words"<< endl;
-	fout << "Part Error Align Word: " << partErrorAlign << " words" << endl;
+	fout << "All Correct Align Word: " << correctAlign << "(" << singleWord << "+" << phraseWord << ") words"<< endl;
+	fout << "Part Correct Align Word: " << partCorrect << " words" << endl;
 	fout << "Full Error Align Word: " << fullErrorAlign << " words" << endl;
 	fout << "Drop Error Align Word: " << dropAlign << " words" << endl;
 	fout << "Miss Align Word: " << missAlign << " words" << endl;
-	fout << "Alignment Precision Rate(correctAlign/Not Miss Align): " << precisionRate << "%" << endl;
+	fout << "Alignment Precision Rate((All)correctAlign/Not Miss Align): " << precisionRate << "%" << endl;
+	fout << "Alignment Precision Rate((Part+All)correctAlign/Not Miss Align): " << precisionRateForGC << "%" << endl;
 	fout << "Alignment Recall Rate(correctAlign/Align in library): " << recallRate << "%" << endl;
-	fout << "Alignment Recall Rate(correctAlign/Align be used in library): " << (double)correctAlign*100/(double)(usedAlign) << "%" << endl;
-	fout << "f-measure: " << (2*precisionRate*recallRate)/(precisionRate + recallRate) << "%" << endl;
+	fout << "Alignment Recall Rate(correctAlign/Align be used in library): " << recallRateForCandidate << "%" << endl;
+	fout << "f-measure: " << (2*precisionRate*recallRateForCandidate)/(precisionRate + recallRateForCandidate) << "%" << endl;
 	fin.close();
 	fout.close();
 
@@ -214,6 +293,8 @@ bool updateAlignInfo(map<string, alignInfo> &wordPairInfo, vector<string> &singl
 	for(i = 5; i <=8; i++ ){
 		if(singlePairInfo[i].find("-") != string::npos){return false;}
 	}
+
+	if(atof(singlePairInfo[10].c_str()) < THRESHOLD_OF_PROBABILITY){return false;}
 	wordPairInfo[chWord].enWord.push_back(enWord);
 	wordPairInfo[chWord].pairFreq.push_back(str2int(singlePairInfo[4]));
 	wordPairInfo[chWord].mu.push_back(atof(singlePairInfo[5].c_str()));

@@ -166,7 +166,7 @@ double getMutualInformation(int totalNumber, int partA, int partB, int partAB){
 	p_a = (double)(partA+partAB)/(double)totalNumber;
 	p_b = (double)(partB+partAB)/(double)totalNumber;
 	mu = log(p_ab/(p_a*p_b));
-	//cout << mu << "=" << p_ab << "/" << p_a << "*" << p_b << endl;
+	//if(mu < 0){cout << mu << "=" << p_ab << "/" << p_a << "*" << p_b << endl;}
 	return mu;
 }
 

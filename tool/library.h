@@ -20,6 +20,7 @@
 #include <thread>
 #include <mutex>
 #include <regex.h>
+#include <boost/thread.hpp>
 
 using namespace std;
 
