@@ -18,6 +18,7 @@ int main(int argc, char* argv[]){
 	const string OUTPUT_PATH = "../data/supportAlign";
 	const int CANDIDATE_DEGREE = 3;
 	const int MAX_THREAD = 128;
+	const bool SWITCH_USE_KNOWN_LIB = false;
 	map<string, int> intersectionPool; //(ch,en),freq
 	map<string, int> enFilterLib;
 	map<string, int>::iterator iter;
@@ -25,38 +26,55 @@ int main(int argc, char* argv[]){
 	vector<string> knownWord;
 	vector<string> chLawList;
 	vector<string> enLawList;
+	vector<string> chSentecneSeg;
 	map<string, int> emptyMap;
+	map<string, int> chWordInfo;//Record chWord and Frequency
 	vector<map<string, int>> chLawSegList;
 	vector<map<string, int>> enLawSegList;
 	vector<vector<string>> enLawSequenceList;
-	int i, j, k, listIdx, flag, threadFlag;
+	int i, j, k, listIdx, flag, threadFlag, breakFlag;
 	char buf[4096];
 	string tmpStr;
 	fstream fin, fout;
 	std::thread 	t[128];
 
-	loadFile(KNOWN_CHWORD_PATH, knownWord);
 	loadFile(EN_FILTER_LIB, enFilterLib);
 	loadFile(CH_LAW_PATH, chLawList);
 	loadFile(EN_LAW_PATH, enLawList);
+	if(SWITCH_USE_KNOWN_LIB == true){loadFile(KNOWN_CHWORD_PATH, knownWord);}
 	cerr << "\E[1;32;40mInitialize...\E[0m" << endl;
-	for(i = 0, listIdx = 0, flag = 0; i < chLawList.size(); i++, flag = 0){
-		for(j = 0; j < knownWord.size()-1; j++){
-			if(chLawList[i].find(knownWord[j]) != string::npos){
-				if(flag == 0){
-					chLawSegList.push_back(emptyMap);
-					enLawSegList.push_back(emptyMap);
+	for(i = 0, listIdx = 0, flag = 0; i < chLawList.size(); i++, flag = 0){//For each law pair
+		//Chinese
+		if(SWITCH_USE_KNOWN_LIB == true){
+			for(j = 0; j < knownWord.size()-1; j++){
+				if(chLawList[i].find(knownWord[j]) != string::npos){
+					if(flag == 0){
+						chLawSegList.push_back(emptyMap);
+						enLawSegList.push_back(emptyMap);
+					}
+					chLawSegList[listIdx][knownWord[j]] = 1;
+					flag++;
 				}
-				chLawSegList[listIdx][knownWord[j]] = 1;
-				flag++;
+			}
+			if(flag == 0){continue;}//Have not useful chword: drop it!
+		}
+		else{
+			explode(' ', chLawList[i], lawSeg);
+			for(j = 0; j < lawSeg.size(); j++){//For each seg
+				tmpStr = lawSeg[j];
+				if(chWordInfo.find(tmpStr) == chWordInfo.end()){	chWordInfo[tmpStr] = 1;}
+				else{chWordInfo[tmpStr]++;}
+				chLawSegList.push_back(emptyMap);
+				chLawSegList[listIdx][tmpStr] = 1;
 			}
 		}
-		if(flag == 0){continue;}//Have not useful chword: drop it!
+		//English
 		explode(' ', enLawList[i], lawSeg);
 		for(j = 0; j < lawSeg.size(); j++){
 			if(enFilterLib.find(lawSeg[j]) != enFilterLib.end()){//Have to filt out
 				continue;
 			}
+			enLawSegList.push_back(emptyMap);
 			enLawSegList[listIdx][lawSeg[j]] = 1;
 		}
 		enLawSequenceList.push_back(lawSeg);
@@ -66,6 +84,20 @@ int main(int argc, char* argv[]){
 		}
 	}
 	cerr << "\t\E[1;34;40mAll Load " << (i+1) << " laws\E[0m" << endl;
+
+	if(SWITCH_USE_KNOWN_LIB == false){
+		for(iter = chWordInfo.begin(); iter != chWordInfo.end(); iter++){
+			tmpStr = iter->first;
+			for(i = 0, breakFlag = 0; i < tmpStr.length(); i++){
+				if(tmpStr[i] >= '0' && tmpStr[i] <= '9'){breakFlag++; break;}
+			}
+			if(breakFlag != 0){continue;}
+			knownWord.push_back(iter->first);
+		}
+	}
+	cerr << "\t\E[1;34;40mAll Load " << knownWord.size() << " chinese words\E[0m" << endl;
+
+
 
 	cerr << "\E[1;32;40mGet Intersection for each law pair\E[0m" << endl;
 	for(i = 0, threadFlag = 0; i < listIdx; i++){
