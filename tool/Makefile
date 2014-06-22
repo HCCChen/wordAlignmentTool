@@ -15,6 +15,7 @@ all: library
 	${CC} filtKnownAlignLib.cpp ${CFLAGS} -o filtKnownAlignLib.out
 	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
 	${CC} supportModel.cpp ${CFLAGS} -o supportModel.out
+	${CC} randomSelect.cpp ${CFLAGS} -o randomSelect.out
 library: library.cpp
 	${CC} library.h library.cpp -O2 -std=c++11 -c
 phraseMerge: phraseMerge.cpp
@@ -43,5 +44,9 @@ getAlignPair: getAlignPair.cpp
 	${CC} getAlignPair.cpp ${CFLAGS} -o getAlignPair.out
 supportModel: supportModel.cpp
 	${CC} supportModel.cpp ${CFLAGS} -o supportModel.out
+randomSelect: randomSelect.cpp
+	${CC} randomSelect.cpp ${CFLAGS} -o randomSelect.out
+
+
 clear:
 	rm *.out

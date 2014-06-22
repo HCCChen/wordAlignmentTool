@@ -33,12 +33,14 @@ string getBestAlignByFC(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByAP(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignBySUM(string chWord, map<string, alignInfo> &pairInfo);
 string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo);
+bool transferPairInfo(string pairWord, map<string, alignInfo> &pairInfo, map<string, alignInfo> &newPairInfo);
 bool vector_cmp_by_dc(vector<string> a, vector<string> b);
 
 const double THRESHOLD_OF_PROBABILITY = 0.001;
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign20140522";
+	const string KNOWN_CH_WORD_PATH = "tmpWord";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
 	const string MISS_ALIGN_RESULT_PATH = "../data/errorRecordWithoutError";
@@ -63,11 +65,14 @@ int main(int argc, char* argv[]){
 	}
 	map<string, alignLib> wordLib;
 	map<string, alignInfo> wordPairInfo;
+	map<string, alignInfo> candidateList;
 	map<string, alignInfo>::iterator iter;
 	map<string, string> lemmaPair;
+	map<string, int> knownChWord;
 	vector<vector<string>> pairList;
 	vector<string> candidateSeg;
 	vector<string> resultPool;
+	vector<string> chWordCandidate;
 	vector<string> enPrefix;
 	vector<string> enPostfix;
 	fstream fin, fout, ferr1, ferr2;
@@ -83,6 +88,7 @@ int main(int argc, char* argv[]){
 	cerr << "\E[1;32;40mPreparing!\E[0m" << endl;
 	loadFile(EN_PREFIX_PATH, enPrefix);
 	loadFile(EN_POSTFIX_PATH, enPostfix);
+	loadFile(KNOWN_CH_WORD_PATH, knownChWord);
 	fin.open(KNOWN_ALIGN_LIB_PATH.c_str(), ios::in);
 	while(!fin.eof()){
 		fin.getline(buf, 4096);
@@ -165,16 +171,35 @@ int main(int argc, char* argv[]){
 	if(USE_LOCAL_INFO == true && FILTER_SWITCH == true){
 		cerr << "\E[1;32;40mGet best align pair for each ChWord\E[0m" << endl;
 		for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){//for each chWord
-			tmpStr = iter->first;
+			chWord = iter->first;
+			chWordCandidate.clear();
 			for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
-				resultPool.push_back(getBestAlignByDC(tmpStr, wordPairInfo));
-				resultPool.push_back(getBestAlignByCC(tmpStr, wordPairInfo));
-				resultPool.push_back(getBestAlignByLR(tmpStr, wordPairInfo));
-				resultPool.push_back(getBestAlignByFC(tmpStr, wordPairInfo));
-				//resultPool.push_back(getBestAlignByMU(tmpStr, wordPairInfo));
-				//resultPool.push_back(getBestAlignByAP(tmpStr, wordPairInfo));
-				//resultPool.push_back(getBestAlignBySUM(tmpStr, wordPairInfo));
-				//resultPool.push_back(getBestAlignByFreq(tmpStr, wordPairInfo));
+				chWordCandidate.push_back(getBestAlignByDC(chWord, wordPairInfo));
+				chWordCandidate.push_back(getBestAlignByCC(chWord, wordPairInfo));
+				chWordCandidate.push_back(getBestAlignByLR(chWord, wordPairInfo));
+				chWordCandidate.push_back(getBestAlignByFC(chWord, wordPairInfo));
+				//resultPool.push_back(getBestAlignByMU(chWord, wordPairInfo));
+				//resultPool.push_back(getBestAlignByAP(chWord, wordPairInfo));
+				//resultPool.push_back(getBestAlignBySUM(chWord, wordPairInfo));
+				//resultPool.push_back(getBestAlignByFreq(chWord, wordPairInfo));
+			}
+			//Remove Repeat item
+			sort(chWordCandidate.begin(), chWordCandidate.end());
+			chWordCandidate.erase( unique( chWordCandidate.begin(), chWordCandidate.end() ), chWordCandidate.end());
+			//Get top 5 by pair alignment probability
+			if(chWordCandidate.size() > 5){
+				candidateList.clear();
+				for(i = 0; i < chWordCandidate.size(); i++){
+					transferPairInfo(chWordCandidate[i], wordPairInfo, candidateList);
+				}
+				chWordCandidate.clear();
+				for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
+					resultPool.push_back(getBestAlignByAP(chWord, candidateList));
+				}
+			}
+			//Put in result pool
+			for(i = 0; i < chWordCandidate.size(); i++){
+				resultPool.push_back(chWordCandidate[i]);
 			}
 		}
 	}
@@ -187,17 +212,24 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-	//Remove Repeat item
-	sort(resultPool.begin(), resultPool.end());
-	resultPool.erase( unique( resultPool.begin(), resultPool.end() ), resultPool.end());
 	numberOfFinalResult = resultPool.size();
 
 
 	//Evalute and output result
-	if(EVALUATE_SWITCH == false){
+	if(EVALUATE_SWITCH == false){//Just output
 		cerr << "\E[1;32;40mJust Output candidate pair\E[0m" << endl;
 		for(i = 0, partErrorAlign = 0, fullErrorAlign = 0; i < resultPool.size(); i++){//For each Pair
-			fout << resultPool[i] << endl;
+			//fout << resultPool[i] << endl;
+			tmpStr = resultPool[i].substr(0, resultPool[i].find(","));
+			if(knownChWord.find(tmpStr) == knownChWord.end()){continue;}
+			if(chWord != tmpStr){
+				chWord = tmpStr;
+				fout << endl << resultPool[i] << ",";
+			}
+			else{
+				tmpStr = resultPool[i].substr(resultPool[i].find(",") + 1);
+				fout << tmpStr << ",";
+			}
 		}
 	}
 	else if(EVALUATE_SWITCH == true){
@@ -411,6 +443,28 @@ string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo){
 	return tmpStr;
 }
 
+bool transferPairInfo(string pairWord, map<string, alignInfo> &pairInfo, map<string, alignInfo> &newPairInfo){
+	string chWord, enWord;
+	int i;
+	chWord = pairWord.substr(0, pairWord.find(","));
+	enWord = pairWord.substr(pairWord.find(",")+1);
+	for(i = 0; i < pairInfo[chWord].enWord.size(); i++){
+		if(pairInfo[chWord].enWord[i] == enWord){
+			newPairInfo[chWord].enWord.push_back(pairInfo[chWord].enWord[i]);
+			newPairInfo[chWord].pairFreq.push_back(pairInfo[chWord].pairFreq[i]);
+			newPairInfo[chWord].mu.push_back(pairInfo[chWord].mu[i]);
+			newPairInfo[chWord].cc.push_back(pairInfo[chWord].cc[i]);
+			newPairInfo[chWord].lr.push_back(pairInfo[chWord].lr[i]);
+			newPairInfo[chWord].dc.push_back(pairInfo[chWord].dc[i]);
+			newPairInfo[chWord].fc.push_back(pairInfo[chWord].fc[i]);
+			newPairInfo[chWord].ap.push_back(pairInfo[chWord].ap[i]);
+			newPairInfo[chWord].sumOfParameter.push_back(pairInfo[chWord].sumOfParameter[i]);
+			break;
+		}
+	}
+}
+
 bool vector_cmp_by_dc(vector<string> a, vector<string> b){
 	return a[8] > b[8];//index of dice value
 }
+

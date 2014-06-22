@@ -24,11 +24,12 @@ bool generateEMValue(map<string, int> &wordPair, map<string, double> &wordPairWi
 
 const int FILTER_OF_FREQUENCY = 1;//最少須出現次數
 const double ALIGNMENT_PROBABILITY = 0.001;//對齊機率門檻
+const bool SWITCH_KNOWN_CHLIB = false;
 
 int main(int argc, char* argv[]){
 	const int ITERATION_NUMBER = 4;
 	const int MAX_GRAM = 4;
-	const string CH_CONTEXT_PATH = "../data/chBase";
+	const string CH_CONTEXT_PATH = "../data/chBaseTrain";
 	const string EN_CONTEXT_PATH = "../data/enBaseTmp";
 //	const string CH_CONTEXT_PATH = "../data/chTest";
 //	const string EN_CONTEXT_PATH = "../data/enTest";
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]){
 	map<string, int> enWordInfo;//Record enWord and Frequency
 	map<string, int>::iterator iter;
 	map<string, map<string, double>> wordP_C_EByChWord;
-	int i,j, chFreq, enFreq, pairFreq, totalNumber = 0, totalPair = 0;
+	int i,j, chFreq, enFreq, pairFreq, totalNumber = 0, totalPair = 0, breakFlag = 0;
 	double mu = 0, cc = 0, lr = 0, dc = 0, fc = 0, alignProbability = 0;
 	string tmpStr, chLaw, enLaw, chWord, enWord;
 	fstream fin, fin2, fout;
@@ -64,11 +65,30 @@ int main(int argc, char* argv[]){
 	cerr << "\E[1;32;40mInitialize...\E[0m" << endl;
 	loadFile(CH_SPECIAL_LIB_PATH, specialLibCh);
 	loadFile(EN_SPECIAL_LIB_PATH, specialLib);
-	loadFile(CH_KNOWNWORD_LIB, knownChWord);
 	loadFile(CH_CONTEXT_PATH, chLawList);
 	loadFile(EN_CONTEXT_PATH, enLawList);
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	fout.close();
+
+	if(SWITCH_KNOWN_CHLIB == true){loadFile(CH_KNOWNWORD_LIB, knownChWord);	}
+	else{
+		for(i = 0;i < chLawList.size(); i++){//For each law pair
+			explode(' ', chLawList[i], chSentecneSeg);
+			for(j = 0; j < chSentecneSeg.size(); j++){//For each seg
+				tmpStr = chSentecneSeg[j];
+				if(chWordInfo.find(tmpStr) == chWordInfo.end()){	chWordInfo[tmpStr] = 1;}
+				else{chWordInfo[tmpStr]++;}
+			}
+		}
+		for(iter = chWordInfo.begin(); iter != chWordInfo.end(); iter++){
+			tmpStr = iter->first;
+			for(i = 0, breakFlag = 0; i < tmpStr.length(); i++){
+				if(tmpStr[i] >= '0' && tmpStr[i] <= '9'){breakFlag++; break;}
+			}
+			if(breakFlag != 0){continue;}
+			knownChWord.push_back(iter->first);
+		}
+	}
 	for(i = 0;i < enLawList.size(); i++){
 		explode(' ', enLawList[i], enSentecneSeg);
 		generateNGram(enSentecneSeg, nGram, MAX_GRAM, specialLib, enWordInfo);

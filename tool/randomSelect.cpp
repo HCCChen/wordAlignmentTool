@@ -7,11 +7,12 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
+	//const string INPUT_PATH = "../data/supportAlign";
 	const string INPUT_PATH = "../data/evaluteResult";
 	const string OUTPUT_PATH = "../data/randomSelect";
-	const int MAX_SELECT = 300;
+	const int MAX_SELECT = 500;
 	char buf[4096];
-	string tmpStr;
+	string tmpStr, chWord;
 	fstream fout;
 	int i, randNumber, selectNumber;
 	vector<string> candidatePool;
@@ -22,6 +23,12 @@ int main(int argc, char* argv[]){
 	fout.open(OUTPUT_PATH.c_str(), ios::out);
 	for(i = 0; i < MAX_SELECT; i++)	{
 		randNumber = rand() % candidatePool.size();
+		tmpStr = candidatePool[randNumber];
+		chWord = tmpStr.substr(0, tmpStr.find(","));
+		if(chWord.length() < 6){
+			i--;
+			continue;
+		}
 		if(candidatePool[randNumber] != "EMPTY"){
 			fout << candidatePool[randNumber] << endl;
 			candidatePool[randNumber] = "EMPTY";
