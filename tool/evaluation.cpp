@@ -36,11 +36,11 @@ string getBestAlignByFreq(string chWord, map<string, alignInfo> &pairInfo);
 bool transferPairInfo(string pairWord, map<string, alignInfo> &pairInfo, map<string, alignInfo> &newPairInfo);
 bool vector_cmp_by_dc(vector<string> a, vector<string> b);
 
-const double THRESHOLD_OF_PROBABILITY = 0.001;
+const double THRESHOLD_OF_PROBABILITY = 0.05;
 
 int main(int argc, char* argv[]){
 	const string KNOWN_ALIGN_LIB_PATH = "../data/knownWordAlign20140522";
-	const string KNOWN_CH_WORD_PATH = "tmpWord";
+	const string KNOWN_CH_WORD_PATH = "../data/knownChWord";
 	const string PART_ERROR_RESULT_PATH = "../data/errorRecordPart";
 	const string FULL_ERROR_RESULT_PATH = "../data/errorRecordFull";
 	const string MISS_ALIGN_RESULT_PATH = "../data/errorRecordWithoutError";
@@ -48,6 +48,7 @@ int main(int argc, char* argv[]){
 	const string EN_POSTFIX_PATH = "../data/languageBase/enPostfix";
 	const string ENLIB_PATH = "../data/enBase.xml";
 	const bool FILTER_SWITCH = true;//true = do filter
+	const bool FILTER_OUT_KNOWN_CHWORD = true;//true = do filter
 	const bool EVALUATE_SWITCH = false;//true = do evaluate; false = just output
 	const bool USE_GLOBAL_INFO = false;
 	const bool USE_LOCAL_INFO = true;
@@ -60,6 +61,7 @@ int main(int argc, char* argv[]){
 	}
 	else{
 		ALIGN_PATH = "../data/ngramPairResult";
+		//ALIGN_PATH = "../data/alignResult";
 		//ALIGN_PATH = "../data/supportAlign";
 		EVALUTE_RESULT_PATH = "../data/evaluteResult";
 	}
@@ -79,7 +81,7 @@ int main(int argc, char* argv[]){
 	char buf[4096];
 	string tmpStr, chWord, alignWord, enBuf1, enBuf2, baseWord, lemmaWord;
 	int i, j, k, filtFlag, alignCountChWord = 0, singleWord = 0, phraseWord = 0, numberOfFinalResult = 0, partCorrect = 0, partCorrectFlag = 0, partUsedAlign = 0;
-	int correctAlign = 0, partErrorAlign = 0, fullErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0, usedAlign = 0;
+	int correctAlign = 0, partErrorAlign = 0, fullErrorAlign = 0 , missAlign = 0, dropAlign = 0 ,totalAlign = 0, alignLibCount = 0, usedAlign = 0, useKnownChWord = 0;
 	int pos1, pos2, singleWordPart = 0, phraseWordPart = 0;
 	double gizaFreq, gizaProbability, pairFreq, diceValue;
 	double precisionRate, recallRate, recallRateForCandidate, precisionRateForGC;
@@ -151,10 +153,17 @@ int main(int argc, char* argv[]){
 		tmpStr.assign(buf);
 		if(tmpStr.length() < 3){continue;}
 		filtFlag = 0;
-		//Divide Word
+		//Divide Word and paramenter
 		totalAlign++;
 		candidateSeg.clear();
 		explode(',', tmpStr, candidateSeg);
+		if(FILTER_OUT_KNOWN_CHWORD == true && knownChWord.find(candidateSeg[0]) == knownChWord.end()){continue;}
+		else{//Use Known chWord
+			if(knownChWord[candidateSeg[0]] != -1){//Have not be record -> record it!
+				knownChWord[candidateSeg[0]] = -1;
+				useKnownChWord++;
+			}
+		}
 		if(FILTER_SWITCH == false){
 			tmpStr = candidateSeg[0] + "," + candidateSeg[1];
 			resultPool.push_back(tmpStr);
@@ -171,6 +180,7 @@ int main(int argc, char* argv[]){
 	if(USE_LOCAL_INFO == true && FILTER_SWITCH == true){
 		cerr << "\E[1;32;40mGet best align pair for each ChWord\E[0m" << endl;
 		for(iter = wordPairInfo.begin(); iter != wordPairInfo.end(); iter++){//for each chWord
+			//===========Step1==============
 			chWord = iter->first;
 			chWordCandidate.clear();
 			for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
@@ -178,28 +188,33 @@ int main(int argc, char* argv[]){
 				chWordCandidate.push_back(getBestAlignByCC(chWord, wordPairInfo));
 				chWordCandidate.push_back(getBestAlignByLR(chWord, wordPairInfo));
 				chWordCandidate.push_back(getBestAlignByFC(chWord, wordPairInfo));
-				//resultPool.push_back(getBestAlignByMU(chWord, wordPairInfo));
-				//resultPool.push_back(getBestAlignByAP(chWord, wordPairInfo));
+				chWordCandidate.push_back(getBestAlignByMU(chWord, wordPairInfo));
+				//resultPool.push_back(getBestAlignByDC(chWord, wordPairInfo));
 				//resultPool.push_back(getBestAlignBySUM(chWord, wordPairInfo));
 				//resultPool.push_back(getBestAlignByFreq(chWord, wordPairInfo));
 			}
 			//Remove Repeat item
 			sort(chWordCandidate.begin(), chWordCandidate.end());
 			chWordCandidate.erase( unique( chWordCandidate.begin(), chWordCandidate.end() ), chWordCandidate.end());
+			//===========Step2==============
 			//Get top 5 by pair alignment probability
-			if(chWordCandidate.size() > 5){
+			if(chWordCandidate.size() > NUMBER_OF_FINAL_ALIGN){//Candidate less than 5 pair
 				candidateList.clear();
-				for(i = 0; i < chWordCandidate.size(); i++){
+				for(i = 0; i < chWordCandidate.size(); i++){//Transform formate for all candidate
 					transferPairInfo(chWordCandidate[i], wordPairInfo, candidateList);
 				}
-				chWordCandidate.clear();
 				for(i = 0; i < NUMBER_OF_FINAL_ALIGN; i++){//Find top N result
-					resultPool.push_back(getBestAlignByAP(chWord, candidateList));
+					tmpStr = getBestAlignByAP(chWord, candidateList);
+					if(tmpStr != "EMPTY"){
+						resultPool.push_back(getBestAlignByAP(chWord, candidateList));
+					}
 				}
 			}
-			//Put in result pool
-			for(i = 0; i < chWordCandidate.size(); i++){
-				resultPool.push_back(chWordCandidate[i]);
+			else{
+				//Put in result pool
+				for(i = 0; i < chWordCandidate.size(); i++){
+					resultPool.push_back(chWordCandidate[i]);
+				}
 			}
 		}
 	}
@@ -211,7 +226,6 @@ int main(int argc, char* argv[]){
 			resultPool.push_back(tmpStr);
 		}
 	}
-
 	numberOfFinalResult = resultPool.size();
 
 
@@ -219,9 +233,9 @@ int main(int argc, char* argv[]){
 	if(EVALUATE_SWITCH == false){//Just output
 		cerr << "\E[1;32;40mJust Output candidate pair\E[0m" << endl;
 		for(i = 0, partErrorAlign = 0, fullErrorAlign = 0; i < resultPool.size(); i++){//For each Pair
-			//fout << resultPool[i] << endl;
+//			fout << resultPool[i] << endl;
 			tmpStr = resultPool[i].substr(0, resultPool[i].find(","));
-			if(knownChWord.find(tmpStr) == knownChWord.end()){continue;}
+			if(FILTER_OUT_KNOWN_CHWORD == true && knownChWord.find(tmpStr) == knownChWord.end()){continue;}
 			if(chWord != tmpStr){
 				chWord = tmpStr;
 				fout << endl << resultPool[i] << ",";
@@ -320,6 +334,7 @@ int main(int argc, char* argv[]){
 		fout << "Used Word Align Count: " << usedAlign << " Pairs" << endl;
 		fout << "Total Align Word: " << totalAlign << " words"  << endl;
 		fout << "All candidate word: " << numberOfFinalResult << " words"  << endl;
+		fout << "All candidate chWord: " << useKnownChWord << " words"  << endl;
 		fout << "All Correct Align Word: " << correctAlign << "(" << singleWord << "+" << phraseWord << ") words"<< endl;
 		fout << "Part Correct Align Word: " << partCorrect << "(" << singleWordPart << "+" << phraseWordPart << ") words" << endl;
 		fout << "Part Correct Align Used Align: " << partUsedAlign << " words" << endl;
@@ -346,10 +361,11 @@ bool updateAlignInfo(map<string, alignInfo> &wordPairInfo, vector<string> &singl
 	chWord = singlePairInfo[0];
 	enWord = singlePairInfo[1];
 	for(i = 5; i <=8; i++ ){
-		if(singlePairInfo[i].find("-") != string::npos){return false;}
+		if(singlePairInfo[i].find("-") != string::npos
+		|| singlePairInfo[i].find("nan") != string::npos){singlePairInfo[i] = "0";}
 	}
 
-	if(atof(singlePairInfo[10].c_str()) < THRESHOLD_OF_PROBABILITY){return false;}
+//	if(atof(singlePairInfo[10].c_str()) < THRESHOLD_OF_PROBABILITY){return false;}
 	wordPairInfo[chWord].enWord.push_back(enWord);
 	wordPairInfo[chWord].pairFreq.push_back(str2int(singlePairInfo[4]));
 	wordPairInfo[chWord].mu.push_back(atof(singlePairInfo[5].c_str()));
@@ -367,7 +383,7 @@ string getBestAlignByDC(string chWord, map<string, alignInfo> &pairInfo){
 	vector<double>::iterator pos = max_element(pairInfo[chWord].dc.begin(), pairInfo[chWord].dc.end());
 	double dcValue = *pos;
 	int idx = find(pairInfo[chWord].dc.begin(), pairInfo[chWord].dc.end(), dcValue) - pairInfo[chWord].dc.begin();
-	pairInfo[chWord].dc[idx] = -1;
+	pairInfo[chWord].dc[idx] = -100;
 	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
 	return tmpStr;
 }
@@ -417,6 +433,11 @@ string getBestAlignByAP(string chWord, map<string, alignInfo> &pairInfo){
 	vector<double>::iterator pos = max_element(pairInfo[chWord].ap.begin(), pairInfo[chWord].ap.end());
 	double dcValue = *pos;
 	int idx = find(pairInfo[chWord].ap.begin(), pairInfo[chWord].ap.end(), dcValue) - pairInfo[chWord].ap.begin();
+	/*
+	if(pairInfo[chWord].ap[idx] < THRESHOLD_OF_PROBABILITY){
+		return "EMPTY";
+	}
+	*/
 	tmpStr = chWord + "," + pairInfo[chWord].enWord[idx];
 	pairInfo[chWord].ap[idx] = -1;
 	return tmpStr;
